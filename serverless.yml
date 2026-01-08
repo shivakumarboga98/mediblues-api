@@ -1,0 +1,89 @@
+service: mediblues-api
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: ${opt:stage, 'dev'}
+  region: ap-south-1
+  memorySize: 256
+  timeout: 10
+  
+  # Environment variables available to all functions
+  environment:
+    STAGE: ${self:provider.stage}
+    NODE_ENV: ${env:NODE_ENV, 'development'}
+  
+  # HTTP API Configuration (faster & cheaper than REST API)
+  httpApi:
+    cors:
+      allowedOrigins:
+        - http://localhost:5173
+        - ${env:FRONTEND_URL, 'https://your-amplify-domain.amplifyapp.com'}
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+        - X-Amz-Date
+        - X-Api-Key
+        - X-Amz-Security-Token
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      allowCredentials: false
+      exposedResponseHeaders:
+        - Content-Length
+        - X-Request-Id
+      maxAge: 3600
+
+# Lambda functions
+functions:
+  health:
+    handler: src/handlers/health.handler
+    description: Health check endpoint
+    events:
+      - httpApi:
+          path: /health
+          method: GET
+    
+  contact:
+    handler: src/handlers/contact.handler
+    description: Contact form submission endpoint
+    events:
+      - httpApi:
+          path: /contact
+          method: POST
+
+# Plugins for local development and environment management
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-offline
+
+# Custom configuration
+custom:
+  serverless-offline:
+    httpPort: 3000
+    host: 0.0.0.0
+    noPrependStageInUrl: true
+    
+  dotenv:
+    path: .env.${self:provider.stage}
+    basePath: ./
+    include:
+      - NODE_ENV
+      - FRONTEND_URL
+
+# Package optimization
+package:
+  individually: true
+  patterns:
+    - '!node_modules/**'
+    - '!.git/**'
+    - '!.env*'
+    - '!README.md'
+    - '!.gitignore'
+    - 'src/**'
+    - 'package.json'

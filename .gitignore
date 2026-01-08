@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Serverless
+.serverless/
+.serverless_plugins/
+
+# Environment variables
+.env
+.env.local
+.env.dev
+.env.prod
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build
+dist/
+build/
+.build/
+
+# AWS
+.aws-sam/
+
+# Testing
+coverage/
+.nyc_output/
