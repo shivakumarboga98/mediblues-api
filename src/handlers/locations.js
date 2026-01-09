@@ -1,33 +1,33 @@
 import { successResponse, errorResponse } from '../utils/response.js';
-import { query } from '../utils/database.js';
+import { Location, Doctor, Department } from '../models/index.js';
 
 /**
- * GET /locations - Get all locations with related data
+ * GET /locations - Get all locations with full details
  */
 export const getLocations = async (event) => {
   try {
-    const results = await query('SELECT * FROM locations ORDER BY createdAt DESC');
-    
-    // Get doctors and departments for each location
-    const locationsWithDetails = await Promise.all(results.map(async (loc) => {
-      const doctors = await query(`
-        SELECT d.* FROM doctors d WHERE d.location_id = ?
-      `, [loc.id]);
-      
-      const departments = await query(`
-        SELECT d.* FROM departments d
-        INNER JOIN department_locations dl ON d.id = dl.department_id
-        WHERE dl.location_id = ?
-      `, [loc.id]);
-      
-      return {
-        ...loc,
-        doctors: doctors,
-        departments: departments
-      };
-    }));
-    
-    return successResponse(locationsWithDetails);
+    const locations = await Location.findAll({
+      attributes: ['id', 'name', 'address', 'phone', 'email', 'enabled', 'createdAt', 'updatedAt'],
+      include: [
+        {
+          model: Doctor,
+          as: 'doctors',
+          attributes: ['id', 'name'],  // Keep this
+          required: false
+        },
+        {
+          model: Department,
+          as: 'departments',
+          attributes: ['id', 'name'],
+          through: { attributes: [] }, // This is correct for departments, since many-to-many
+          required: false
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+
+    return successResponse(locations);
   } catch (error) {
     console.error('Error fetching locations:', error);
     return errorResponse('Failed to fetch locations', 500);
@@ -40,31 +40,31 @@ export const getLocations = async (event) => {
 export const getLocation = async (event) => {
   try {
     const { id } = event.pathParameters;
-    const results = await query('SELECT * FROM locations WHERE id = ?', [id]);
-    
-    if (results.length === 0) {
+
+    const location = await Location.findByPk(id, {
+      attributes: ['id', 'name', 'address', 'phone', 'email', 'enabled', 'createdAt', 'updatedAt'],
+      include: [
+        {
+          model: Doctor,
+          as: 'doctors',
+          attributes: ['id', 'name'],
+          required: false
+        },
+        {
+          model: Department,
+          as: 'departments',
+          attributes: ['id', 'name'],
+          through: { attributes: [] },
+          required: false
+        }
+      ]
+    });
+
+    if (!location) {
       return errorResponse('Location not found', 404);
     }
-    
-    const loc = results[0];
-    
-    // Get doctors at this location
-    const doctors = await query(`
-      SELECT d.* FROM doctors d WHERE d.location_id = ?
-    `, [loc.id]);
-    
-    // Get departments at this location
-    const departments = await query(`
-      SELECT d.* FROM departments d
-      INNER JOIN department_locations dl ON d.id = dl.department_id
-      WHERE dl.location_id = ?
-    `, [loc.id]);
-    
-    return successResponse({
-      ...loc,
-      doctors: doctors,
-      departments: departments
-    });
+
+    return successResponse(location);
   } catch (error) {
     console.error('Error fetching location:', error);
     return errorResponse('Failed to fetch location', 500);
@@ -77,73 +77,79 @@ export const getLocation = async (event) => {
 export const createLocation = async (event) => {
   try {
     const body = JSON.parse(event.body || '{}');
-    const { name, address, phone, email, image, enabled } = body;
+    const { name, address, phone, email } = body;
 
     if (!name || !address || !phone || !email) {
       return errorResponse('Missing required fields', 400);
     }
 
-    const result = await query(
-      'INSERT INTO locations (name, address, phone, email, image, enabled) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, address, phone, email, image || null, enabled !== false]
-    );
+    const location = await Location.create({
+      name,
+      address,
+      phone,
+      email
+    });
 
-    return successResponse({ 
-      id: result.insertId, 
-      name, 
-      address, 
-      phone, 
-      email, 
-      image, 
-      enabled: enabled !== false 
+    return successResponse({
+      id: location.id,
+      name: location.name,
+      address: location.address,
+      phone: location.phone,
+      email: location.email,
+      doctors: [],
+      departments: []
     }, 201);
   } catch (error) {
     console.error('Error creating location:', error);
-    if (error.code === 'ER_DUP_ENTRY') {
-      return errorResponse('Location name already exists', 400);
-    }
     return errorResponse('Failed to create location', 500);
   }
 };
 
 /**
- * PUT /locations/{id} - Update location
+ * PUT /locations/{id} or POST /locations/update - Update location
  */
 export const updateLocation = async (event) => {
   try {
-    const { id } = event.pathParameters;
-    const body = JSON.parse(event.body || '{}');
-    const { name, address, phone, email, image, enabled } = body;
+    // Get ID from path parameter or request body
+    let id = event.pathParameters?.id;
+    let body = JSON.parse(event.body || '{}');
 
-    // Check if location exists
-    const existing = await query('SELECT * FROM locations WHERE id = ?', [id]);
-    if (existing.length === 0) {
+    // If ID not in path, it should be in the body
+    if (!id && body.id) {
+      id = body.id;
+    }
+
+    if (!id) {
+      return errorResponse('Location ID is required', 400);
+    }
+
+    const location = await Location.findByPk(id);
+    if (!location) {
       return errorResponse('Location not found', 404);
     }
 
-    const updateFields = [];
-    const updateValues = [];
+    const { name, address, phone, email, enabled } = body;
 
-    if (name !== undefined) { updateFields.push('name = ?'); updateValues.push(name); }
-    if (address !== undefined) { updateFields.push('address = ?'); updateValues.push(address); }
-    if (phone !== undefined) { updateFields.push('phone = ?'); updateValues.push(phone); }
-    if (email !== undefined) { updateFields.push('email = ?'); updateValues.push(email); }
-    if (image !== undefined) { updateFields.push('image = ?'); updateValues.push(image); }
-    if (enabled !== undefined) { updateFields.push('enabled = ?'); updateValues.push(enabled); }
+    // Update location fields
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (address !== undefined) updateData.address = address;
+    if (phone !== undefined) updateData.phone = phone;
+    if (email !== undefined) updateData.email = email;
+    if (enabled !== undefined) updateData.enabled = enabled;
 
-    if (updateFields.length === 0) {
-      return errorResponse('No fields to update', 400);
+    if (Object.keys(updateData).length > 0) {
+      await location.update(updateData);
     }
 
-    updateValues.push(id);
-    await query(`UPDATE locations SET ${updateFields.join(', ')} WHERE id = ?`, updateValues);
+    // Fetch updated location with all attributes
+    const updatedLocation = await Location.findByPk(id, {
+      attributes: ['id', 'name', 'address', 'phone', 'email', 'enabled', 'createdAt', 'updatedAt']
+    });
 
-    return successResponse({ id, ...body });
+    return successResponse(updatedLocation);
   } catch (error) {
     console.error('Error updating location:', error);
-    if (error.code === 'ER_DUP_ENTRY') {
-      return errorResponse('Location name already exists', 400);
-    }
     return errorResponse('Failed to update location', 500);
   }
 };
@@ -155,9 +161,8 @@ export const deleteLocation = async (event) => {
   try {
     const { id } = event.pathParameters;
 
-    // Check if location exists
-    const existing = await query('SELECT * FROM locations WHERE id = ?', [id]);
-    if (existing.length === 0) {
+    const location = await Location.findByPk(id);
+    if (!location) {
       return errorResponse('Location not found', 404);
     }
 
@@ -166,7 +171,7 @@ export const deleteLocation = async (event) => {
     // - doctor_departments (via cascade delete of doctors)
     // - doctor_specializations (via cascade delete of doctors)
     // - department_locations entries
-    await query('DELETE FROM locations WHERE id = ?', [id]);
+    await location.destroy();
     return successResponse({ message: 'Location and all related doctors/relationships deleted successfully' });
   } catch (error) {
     console.error('Error deleting location:', error);

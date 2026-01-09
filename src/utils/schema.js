@@ -94,32 +94,33 @@ export async function initializeTables() {
     `);
 
     // 7. Banners table
+    await query(`DROP TABLE IF EXISTS banners`);
     await query(`
       CREATE TABLE IF NOT EXISTS banners (
         id INT PRIMARY KEY AUTO_INCREMENT,
         title VARCHAR(255) NOT NULL,
         description TEXT,
-        imageUrl LONGTEXT NOT NULL,
-        dimensions VARCHAR(50),
-        size VARCHAR(50),
-        uploadDate DATE,
-        isActive BOOLEAN DEFAULT true,
+        image LONGTEXT,
+        link VARCHAR(500),
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_isActive (isActive)
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
 
-    // 8. Helpline table
+    // 8. Contact Info table
+    await query(`DROP TABLE IF EXISTS contact`);
     await query(`
-      CREATE TABLE IF NOT EXISTS helpline (
+      CREATE TABLE IF NOT EXISTS contact (
         id INT PRIMARY KEY AUTO_INCREMENT,
-        phone VARCHAR(20) NOT NULL UNIQUE,
+        contact_type ENUM('email', 'mobile') NOT NULL,
+        contact_value VARCHAR(255) NOT NULL,
         description TEXT,
         isActive BOOLEAN DEFAULT true,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_isActive (isActive)
+        UNIQUE KEY unique_contact (contact_type, contact_value),
+        INDEX idx_isActive (isActive),
+        INDEX idx_type (contact_type)
       )
     `);
 
@@ -132,19 +133,19 @@ export async function initializeTables() {
 }
 
 /**
- * Seed initial helpline data if table is empty
+ * Seed initial contact data if table is empty
  */
 export async function seedInitialData() {
   try {
-    // Check if helpline table has any data
-    const helplineCount = await query('SELECT COUNT(*) as count FROM helpline');
+    // Check if contact table has any data
+    const contactCount = await query('SELECT COUNT(*) as count FROM contact');
     
-    if (helplineCount[0].count === 0) {
+    if (contactCount[0].count === 0) {
       await query(`
-        INSERT INTO helpline (phone, description, isActive)
-        VALUES (?, ?, ?)
-      `, ['+91-9876543210', 'Available 24/7 for customer support', true]);
-      console.log('✅ Initial helpline data seeded');
+        INSERT INTO contact (contact_type, contact_value, description, isActive)
+        VALUES (?, ?, ?, ?), (?, ?, ?, ?)
+      `, ['mobile', '+91-9876543210', 'MediBlues Helpline', true, 'email', 'info@mediblues.com', 'Customer Support', true]);
+      console.log('✅ Initial contact data seeded');
     }
 
     console.log('✅ Database seeding completed');
@@ -160,7 +161,7 @@ export async function seedInitialData() {
  */
 export async function dropAllTables() {
   try {
-    await query('DROP TABLE IF EXISTS helpline');
+    await query('DROP TABLE IF EXISTS contact');
     await query('DROP TABLE IF EXISTS banners');
     await query('DROP TABLE IF EXISTS doctor_specializations');
     await query('DROP TABLE IF EXISTS doctor_departments');

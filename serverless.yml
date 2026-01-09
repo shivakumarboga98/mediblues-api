@@ -20,6 +20,7 @@ provider:
     cors:
       allowedOrigins:
         - http://localhost:5173
+        - http://localhost:5174
         - ${env:FRONTEND_URL, 'https://your-amplify-domain.amplifyapp.com'}
       allowedHeaders:
         - Content-Type
@@ -89,6 +90,9 @@ functions:
       - httpApi:
           path: /locations/{id}
           method: PUT
+      - httpApi:
+          path: /locations/update
+          method: POST
 
   deleteLocation:
     handler: src/handlers/locations.deleteLocation
@@ -130,6 +134,9 @@ functions:
       - httpApi:
           path: /departments/{id}
           method: PUT
+      - httpApi:
+          path: /departments/update
+          method: POST
 
   deleteDepartment:
     handler: src/handlers/departments.deleteDepartment
@@ -171,6 +178,9 @@ functions:
       - httpApi:
           path: /doctors/{id}
           method: PUT
+      - httpApi:
+          path: /doctors/update
+          method: POST
 
   deleteDoctor:
     handler: src/handlers/doctors.deleteDoctor
@@ -212,6 +222,9 @@ functions:
       - httpApi:
           path: /banners/{id}
           method: PUT
+      - httpApi:
+          path: /banners/update
+          method: POST
 
   deleteBanner:
     handler: src/handlers/banners.deleteBanner
@@ -221,45 +234,48 @@ functions:
           path: /banners/{id}
           method: DELETE
 
-  # Helpline endpoints
-  getHelpline:
-    handler: src/handlers/helpline.getHelpline
-    description: Get active helpline number
+  # Contact Info endpoints
+  getContactInfo:
+    handler: src/handlers/contact.getContact
+    description: Get active contact information
     events:
       - httpApi:
-          path: /helpline
+          path: /contact-info
           method: GET
 
-  getAllHelplines:
-    handler: src/handlers/helpline.getAllHelplines
-    description: Get all helpline entries
+  getAllContactInfo:
+    handler: src/handlers/contact.getAllContacts
+    description: Get all contact information entries
     events:
       - httpApi:
-          path: /helpline/all
+          path: /contact-info/all
           method: GET
 
-  createHelpline:
-    handler: src/handlers/helpline.createHelpline
-    description: Create or update helpline
+  createContactInfo:
+    handler: src/handlers/contact.createContact
+    description: Create or update contact information
     events:
       - httpApi:
-          path: /helpline
+          path: /contact-info
           method: POST
 
-  updateHelpline:
-    handler: src/handlers/helpline.updateHelpline
-    description: Update specific helpline entry
+  updateContactInfo:
+    handler: src/handlers/contact.updateContact
+    description: Update specific contact information entry
     events:
       - httpApi:
-          path: /helpline/{id}
+          path: /contact-info/{id}
           method: PUT
+      - httpApi:
+          path: /contact-info/update
+          method: POST
 
-  deleteHelpline:
-    handler: src/handlers/helpline.deleteHelpline
-    description: Delete helpline entry
+  deleteContactInfo:
+    handler: src/handlers/contact.deleteContact
+    description: Delete contact information entry
     events:
       - httpApi:
-          path: /helpline/{id}
+          path: /contact-info/{id}
           method: DELETE
 
 # Plugins for local development and environment management

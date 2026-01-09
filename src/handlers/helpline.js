@@ -1,137 +1,132 @@
 import { successResponse, errorResponse } from '../utils/response.js';
-import { query } from '../utils/database.js';
+import { Helpline } from '../models/index.js';
 
 /**
- * GET /helpline - Get current helpline number
+ * GET /contact-info - Get all active contact information
  */
-export const getHelpline = async (event) => {
+export const getContact = async (event) => {
   try {
-    const results = await query('SELECT * FROM helpline WHERE isActive = true LIMIT 1');
+    const results = await Helpline.findAll({
+      where: { is_active: true },
+      order: [['createdAt', 'ASC']]
+    });
     
     if (results.length === 0) {
-      return successResponse({ phone: null, description: null, isActive: false });
+      return successResponse([]);
     }
     
-    return successResponse(results[0]);
-  } catch (error) {
-    console.error('Error fetching helpline:', error);
-    return errorResponse('Failed to fetch helpline number', 500);
-  }
-};
-
-/**
- * GET /helpline/all - Get all helpline entries (admin)
- */
-export const getAllHelplines = async (event) => {
-  try {
-    const results = await query('SELECT * FROM helpline ORDER BY createdAt DESC');
     return successResponse(results);
   } catch (error) {
-    console.error('Error fetching helplines:', error);
-    return errorResponse('Failed to fetch helpline numbers', 500);
+    console.error('Error fetching contact:', error);
+    return errorResponse('Failed to fetch contact information', 500);
   }
 };
 
 /**
- * POST /helpline - Create or update helpline
+ * GET /contact-info/all - Get all contact entries (admin)
  */
-export const createHelpline = async (event) => {
+export const getAllContacts = async (event) => {
+  try {
+    const results = await Helpline.findAll({
+      order: [['createdAt', 'DESC']]
+    });
+    return successResponse(results);
+  } catch (error) {
+    console.error('Error fetching contacts:', error);
+    return errorResponse('Failed to fetch contact information', 500);
+  }
+};
+
+/**
+ * POST /contact-info - Create new contact entry
+ */
+export const createContact = async (event) => {
   try {
     const body = JSON.parse(event.body || '{}');
-    const { phone, description, isActive } = body;
+    const { name, phone, is_active } = body;
 
-    if (!phone) {
-      return errorResponse('Phone number is required', 400);
+    if (!name || !phone) {
+      return errorResponse('Name and phone are required', 400);
     }
 
-    // Check if helpline already exists
-    const existing = await query('SELECT * FROM helpline LIMIT 1');
-    
-    if (existing.length > 0) {
-      // Update existing
-      await query(
-        'UPDATE helpline SET phone = ?, description = ?, isActive = ? WHERE id = ?',
-        [phone, description || null, isActive !== false, existing[0].id]
-      );
-      return successResponse({ id: existing[0].id, phone, description, isActive: isActive !== false });
-    } else {
-      // Create new
-      const result = await query(
-        'INSERT INTO helpline (phone, description, isActive) VALUES (?, ?, ?)',
-        [phone, description || null, isActive !== false]
-      );
-      return successResponse({ 
-        id: result.insertId, 
-        phone, 
-        description, 
-        isActive: isActive !== false 
-      }, 201);
+    // Validate phone format
+    const phoneRegex = /^[\d\s\-\+\(\)]{10,}$/;
+    if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+      return errorResponse('Invalid phone number format', 400);
     }
+
+    const helpline = await Helpline.create({
+      name,
+      phone,
+      is_active: is_active !== false
+    });
+
+    return successResponse({ 
+      id: helpline.id, 
+      name, 
+      phone,
+      is_active: is_active !== false 
+    }, 201);
   } catch (error) {
-    console.error('Error saving helpline:', error);
-    if (error.code === 'ER_DUP_ENTRY') {
-      return errorResponse('This phone number already exists', 400);
-    }
-    return errorResponse('Failed to save helpline number', 500);
+    console.error('Error saving contact:', error);
+    return errorResponse('Failed to save contact information', 500);
   }
 };
 
 /**
- * PUT /helpline/{id} - Update specific helpline entry
+ * PUT /contact-info/{id} - Update specific contact entry
  */
-export const updateHelpline = async (event) => {
+export const updateContact = async (event) => {
   try {
     const { id } = event.pathParameters;
     const body = JSON.parse(event.body || '{}');
 
-    // Check if helpline exists
-    const existing = await query('SELECT * FROM helpline WHERE id = ?', [id]);
-    if (existing.length === 0) {
-      return errorResponse('Helpline entry not found', 404);
+    const helpline = await Helpline.findByPk(id);
+    if (!helpline) {
+      return errorResponse('Contact entry not found', 404);
     }
 
-    const { phone, description, isActive } = body;
-    const updateFields = [];
-    const updateValues = [];
+    const { name, phone, is_active } = body;
+    const updateData = {};
 
-    if (phone !== undefined) { updateFields.push('phone = ?'); updateValues.push(phone); }
-    if (description !== undefined) { updateFields.push('description = ?'); updateValues.push(description); }
-    if (isActive !== undefined) { updateFields.push('isActive = ?'); updateValues.push(isActive); }
+    if (name !== undefined) updateData.name = name;
+    if (phone !== undefined) {
+      const phoneRegex = /^[\d\s\-\+\(\)]{10,}$/;
+      if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+        return errorResponse('Invalid phone number format', 400);
+      }
+      updateData.phone = phone;
+    }
+    if (is_active !== undefined) updateData.is_active = is_active;
 
-    if (updateFields.length === 0) {
+    if (Object.keys(updateData).length === 0) {
       return errorResponse('No fields to update', 400);
     }
 
-    updateValues.push(id);
-    await query(`UPDATE helpline SET ${updateFields.join(', ')} WHERE id = ?`, updateValues);
-
+    await helpline.update(updateData);
     return successResponse({ id, ...body });
   } catch (error) {
-    console.error('Error updating helpline:', error);
-    if (error.code === 'ER_DUP_ENTRY') {
-      return errorResponse('This phone number already exists', 400);
-    }
-    return errorResponse('Failed to update helpline number', 500);
+    console.error('Error updating contact:', error);
+    return errorResponse('Failed to update contact information', 500);
   }
 };
 
 /**
- * DELETE /helpline/{id} - Delete helpline entry
+ * DELETE /contact/{id} - Delete contact entry
  */
-export const deleteHelpline = async (event) => {
+export const deleteContact = async (event) => {
   try {
     const { id } = event.pathParameters;
 
-    // Check if helpline exists
-    const existing = await query('SELECT * FROM helpline WHERE id = ?', [id]);
-    if (existing.length === 0) {
-      return errorResponse('Helpline entry not found', 404);
+    const helpline = await Helpline.findByPk(id);
+    if (!helpline) {
+      return errorResponse('Contact entry not found', 404);
     }
 
-    await query('DELETE FROM helpline WHERE id = ?', [id]);
-    return successResponse({ message: 'Helpline entry deleted successfully' });
+    await helpline.destroy();
+    return successResponse({ message: 'Contact entry deleted successfully' });
   } catch (error) {
-    console.error('Error deleting helpline:', error);
-    return errorResponse('Failed to delete helpline number', 500);
+    console.error('Error deleting contact:', error);
+    return errorResponse('Failed to delete contact information', 500);
   }
 };

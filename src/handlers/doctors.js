@@ -1,37 +1,51 @@
 import { successResponse, errorResponse } from '../utils/response.js';
-import { query } from '../utils/database.js';
+import { Doctor, Location, Department, DoctorSpecialization } from '../models/index.js';
 
 /**
- * GET /doctors - Get all doctors
+ * GET /doctors - Get all doctors with full details
  */
 export const getDoctors = async (event) => {
   try {
-    const results = await query('SELECT * FROM doctors ORDER BY createdAt DESC');
-    
-    // Get location and departments for each doctor
-    const doctorsWithDetails = await Promise.all(results.map(async (doctor) => {
-      const location = await query('SELECT * FROM locations WHERE id = ?', [doctor.location_id]);
-      
-      const departments = await query(`
-        SELECT d.* FROM departments d
-        INNER JOIN doctor_departments dd ON d.id = dd.department_id
-        WHERE dd.doctor_id = ?
-      `, [doctor.id]);
-      
-      const specializations = await query(`
-        SELECT specialization FROM doctor_specializations WHERE doctor_id = ?
-      `, [doctor.id]);
-      
-      return {
-        ...doctor,
-        location: location.length > 0 ? location[0] : null,
-        departments: departments,
-        specializations: specializations.map(s => s.specialization),
-        qualifications: Array.isArray(doctor.qualifications) ? doctor.qualifications : (doctor.qualifications ? JSON.parse(doctor.qualifications) : [])
-      };
+    const doctors = await Doctor.findAll({
+      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'location_id', 'createdAt', 'updatedAt'],
+      include: [
+        {
+          model: Location,
+          as: 'location',
+          attributes: ['id', 'name', 'address', 'phone', 'email']
+        },
+        {
+          model: Department,
+          as: 'departments',
+          attributes: ['id', 'name'],
+          through: { attributes: [] },
+          required: false
+        },
+        {
+          model: DoctorSpecialization,
+          as: 'specializations',
+          attributes: ['specialization'],
+          required: false
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    const formattedDoctors = doctors.map(doc => ({
+      id: doc.id,
+      name: doc.name,
+      qualifications: Array.isArray(doc.qualifications) ? doc.qualifications : (doc.qualifications ? JSON.parse(doc.qualifications) : []),
+      experience: doc.experience,
+      image: doc.image,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+      location_id: doc.location_id,
+      location: doc.location,
+      departments: doc.departments,
+      specializations: doc.specializations.map(s => s.specialization)
     }));
-    
-    return successResponse(doctorsWithDetails);
+
+    return successResponse(formattedDoctors);
   } catch (error) {
     console.error('Error fetching doctors:', error);
     return errorResponse('Failed to fetch doctors', 500);
@@ -44,35 +58,46 @@ export const getDoctors = async (event) => {
 export const getDoctor = async (event) => {
   try {
     const { id } = event.pathParameters;
-    const results = await query('SELECT * FROM doctors WHERE id = ?', [id]);
     
-    if (results.length === 0) {
+    const doctor = await Doctor.findByPk(id, {
+      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'location_id', 'createdAt', 'updatedAt'],
+      include: [
+        {
+          model: Location,
+          as: 'location',
+          attributes: ['id', 'name', 'address', 'phone', 'email']
+        },
+        {
+          model: Department,
+          as: 'departments',
+          attributes: ['id', 'name'],
+          through: { attributes: [] }
+        },
+        {
+          model: DoctorSpecialization,
+          as: 'specializations',
+          attributes: ['specialization'],
+          required: false
+        }
+      ]
+    });
+
+    if (!doctor) {
       return errorResponse('Doctor not found', 404);
     }
-    
-    const doctor = results[0];
-    
-    // Get location
-    const location = await query('SELECT * FROM locations WHERE id = ?', [doctor.location_id]);
-    
-    // Get departments
-    const departments = await query(`
-      SELECT d.* FROM departments d
-      INNER JOIN doctor_departments dd ON d.id = dd.department_id
-      WHERE dd.doctor_id = ?
-    `, [doctor.id]);
-    
-    // Get specializations
-    const specializations = await query(`
-      SELECT specialization FROM doctor_specializations WHERE doctor_id = ?
-    `, [doctor.id]);
-    
+
     return successResponse({
-      ...doctor,
-      location: location.length > 0 ? location[0] : null,
-      departments: departments,
-      specializations: specializations.map(s => s.specialization),
-      qualifications: Array.isArray(doctor.qualifications) ? doctor.qualifications : (doctor.qualifications ? JSON.parse(doctor.qualifications) : [])
+      id: doctor.id,
+      name: doctor.name,
+      qualifications: Array.isArray(doctor.qualifications) ? doctor.qualifications : (doctor.qualifications ? JSON.parse(doctor.qualifications) : []),
+      experience: doctor.experience,
+      image: doctor.image,
+      createdAt: doctor.createdAt,
+      updatedAt: doctor.updatedAt,
+      location_id: doctor.location_id,
+      location: doctor.location,
+      departments: doctor.departments,
+      specializations: doctor.specializations.map(s => s.specialization)
     });
   } catch (error) {
     console.error('Error fetching doctor:', error);
@@ -97,57 +122,54 @@ export const createDoctor = async (event) => {
     }
 
     // Verify location exists
-    const locResults = await query('SELECT id FROM locations WHERE id = ?', [location_id]);
-    if (locResults.length === 0) {
+    const location = await Location.findByPk(location_id);
+    if (!location) {
       return errorResponse('Location not found', 404);
     }
 
-    const result = await query(
-      'INSERT INTO doctors (name, qualifications, experience, location_id, image) VALUES (?, ?, ?, ?, ?)',
-      [
-        name,
-        JSON.stringify(qualifications || []),
-        experience || null,
-        location_id,
-        image || null
-      ]
-    );
+    // Create doctor
+    const doctor = await Doctor.create({
+      name,
+      qualifications: qualifications || [],
+      experience: experience || null,
+      location_id,
+      image: image || null
+    });
 
-    const doctorId = result.insertId;
-
-    // Add departments via junction table
+    // Add departments
     if (departments && departments.length > 0) {
-      for (const deptId of departments) {
-        // Verify department exists
-        const deptResults = await query('SELECT id FROM departments WHERE id = ?', [deptId]);
-        if (deptResults.length > 0) {
-          await query(
-            'INSERT INTO doctor_departments (doctor_id, department_id) VALUES (?, ?)',
-            [doctorId, deptId]
-          );
-        }
+      const validDepts = await Department.findAll({
+        where: { id: departments },
+        attributes: ['id']
+      });
+      
+      if (validDepts.length > 0) {
+        await doctor.addDepartments(validDepts.map(d => d.id));
       }
     }
 
     // Add specializations
     if (specializations && specializations.length > 0) {
       for (const spec of specializations) {
-        await query(
-          'INSERT INTO doctor_specializations (doctor_id, specialization) VALUES (?, ?)',
-          [doctorId, spec]
-        );
+        await DoctorSpecialization.create({
+          doctor_id: doctor.id,
+          specialization: spec
+        });
       }
     }
 
     return successResponse({ 
-      id: doctorId, 
-      ...body
+      id: doctor.id,
+      name: doctor.name,
+      qualifications: doctor.qualifications,
+      experience: doctor.experience,
+      location_id: doctor.location_id,
+      image: doctor.image,
+      departments: [],
+      specializations: specializations || []
     }, 201);
   } catch (error) {
     console.error('Error creating doctor:', error);
-    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
-      return errorResponse('Invalid location_id or department_id', 400);
-    }
     return errorResponse('Failed to create doctor', 500);
   }
 };
@@ -157,80 +179,103 @@ export const createDoctor = async (event) => {
  */
 export const updateDoctor = async (event) => {
   try {
-    const { id } = event.pathParameters;
-    const body = JSON.parse(event.body || '{}');
+    // Get ID from path parameter or request body
+    let id = event.pathParameters?.id;
+    let body = JSON.parse(event.body || '{}');
+    
+    // If ID not in path, it should be in the body
+    if (!id && body.id) {
+      id = body.id;
+    }
+
+    if (!id) {
+      return errorResponse('Doctor ID is required', 400);
+    }
 
     // Check if doctor exists
-    const existing = await query('SELECT * FROM doctors WHERE id = ?', [id]);
-    if (existing.length === 0) {
+    const doctor = await Doctor.findByPk(id);
+    if (!doctor) {
       return errorResponse('Doctor not found', 404);
     }
 
     const { name, qualifications, experience, location_id, departments, specializations, image } = body;
-    const updateFields = [];
-    const updateValues = [];
 
-    if (name !== undefined) { updateFields.push('name = ?'); updateValues.push(name); }
-    if (qualifications !== undefined) { updateFields.push('qualifications = ?'); updateValues.push(JSON.stringify(qualifications)); }
-    if (experience !== undefined) { updateFields.push('experience = ?'); updateValues.push(experience); }
+    // Validate location if provided
     if (location_id !== undefined) {
-      // Verify location exists
-      const locResults = await query('SELECT id FROM locations WHERE id = ?', [location_id]);
-      if (locResults.length === 0) {
+      const location = await Location.findByPk(location_id);
+      if (!location) {
         return errorResponse('Location not found', 404);
       }
-      updateFields.push('location_id = ?');
-      updateValues.push(location_id);
     }
-    if (image !== undefined) { updateFields.push('image = ?'); updateValues.push(image); }
 
-    if (updateFields.length > 0) {
-      updateValues.push(id);
-      await query(`UPDATE doctors SET ${updateFields.join(', ')} WHERE id = ?`, updateValues);
+    // Update doctor fields
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (qualifications !== undefined) updateData.qualifications = qualifications;
+    if (experience !== undefined) updateData.experience = experience;
+    if (location_id !== undefined) updateData.location_id = location_id;
+    if (image !== undefined) updateData.image = image;
+
+    if (Object.keys(updateData).length > 0) {
+      await doctor.update(updateData);
     }
 
     // Update departments if provided
     if (departments !== undefined) {
-      // Delete existing departments
-      await query('DELETE FROM doctor_departments WHERE doctor_id = ?', [id]);
-      
-      // Add new departments
-      if (departments.length > 0) {
-        for (const deptId of departments) {
-          // Verify department exists
-          const deptResults = await query('SELECT id FROM departments WHERE id = ?', [deptId]);
-          if (deptResults.length > 0) {
-            await query(
-              'INSERT INTO doctor_departments (doctor_id, department_id) VALUES (?, ?)',
-              [id, deptId]
-            );
-          }
-        }
-      }
+      const validDepts = await Department.findAll({
+        where: { id: departments },
+        attributes: ['id']
+      });
+      await doctor.setDepartments(validDepts.map(d => d.id));
     }
 
     // Update specializations if provided
     if (specializations !== undefined) {
-      // Delete existing specializations
-      await query('DELETE FROM doctor_specializations WHERE doctor_id = ?', [id]);
+      await DoctorSpecialization.destroy({ where: { doctor_id: id } });
       
-      // Add new specializations
       if (specializations.length > 0) {
         for (const spec of specializations) {
-          await query(
-            'INSERT INTO doctor_specializations (doctor_id, specialization) VALUES (?, ?)',
-            [id, spec]
-          );
+          await DoctorSpecialization.create({
+            doctor_id: id,
+            specialization: spec
+          });
         }
       }
     }
 
-    return successResponse({ id, ...body });
+    // Fetch updated doctor with all associations and return formatted object
+    const updatedDoctor = await Doctor.findByPk(id, {
+      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'location_id', 'createdAt', 'updatedAt'],
+      include: [
+        {
+          model: Location,
+          as: 'location',
+          attributes: ['id', 'name', 'address', 'phone', 'email']
+        },
+        {
+          model: Department,
+          as: 'departments',
+          attributes: ['id', 'name'],
+          through: { attributes: [] }
+        }
+      ]
+    });
+
+    return successResponse({
+      id: updatedDoctor.id,
+      name: updatedDoctor.name,
+      qualifications: Array.isArray(updatedDoctor.qualifications) ? updatedDoctor.qualifications : (updatedDoctor.qualifications ? JSON.parse(updatedDoctor.qualifications) : []),
+      experience: updatedDoctor.experience,
+      image: updatedDoctor.image,
+      createdAt: updatedDoctor.createdAt,
+      updatedAt: updatedDoctor.updatedAt,
+      location_id: updatedDoctor.location_id,
+      location: updatedDoctor.location,
+      departments: updatedDoctor.departments,
+      specializations: updatedDoctor.specializations ? updatedDoctor.specializations.map(s => s.specialization) : []
+    });
   } catch (error) {
     console.error('Error updating doctor:', error);
-    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
-      return errorResponse('Invalid location_id or department_id', 400);
-    }
     return errorResponse('Failed to update doctor', 500);
   }
 };
@@ -243,12 +288,12 @@ export const deleteDoctor = async (event) => {
     const { id } = event.pathParameters;
 
     // Check if doctor exists
-    const existing = await query('SELECT * FROM doctors WHERE id = ?', [id]);
-    if (existing.length === 0) {
+    const doctor = await Doctor.findByPk(id);
+    if (!doctor) {
       return errorResponse('Doctor not found', 404);
     }
 
-    await query('DELETE FROM doctors WHERE id = ?', [id]);
+    await doctor.destroy();
     return successResponse({ message: 'Doctor deleted successfully' });
   } catch (error) {
     console.error('Error deleting doctor:', error);
