@@ -57,6 +57,211 @@ functions:
           path: /contact
           method: POST
 
+  # Locations endpoints
+  getLocations:
+    handler: src/handlers/locations.getLocations
+    description: Get all locations
+    events:
+      - httpApi:
+          path: /locations
+          method: GET
+
+  getLocation:
+    handler: src/handlers/locations.getLocation
+    description: Get single location
+    events:
+      - httpApi:
+          path: /locations/{id}
+          method: GET
+
+  createLocation:
+    handler: src/handlers/locations.createLocation
+    description: Create new location
+    events:
+      - httpApi:
+          path: /locations
+          method: POST
+
+  updateLocation:
+    handler: src/handlers/locations.updateLocation
+    description: Update location
+    events:
+      - httpApi:
+          path: /locations/{id}
+          method: PUT
+
+  deleteLocation:
+    handler: src/handlers/locations.deleteLocation
+    description: Delete location
+    events:
+      - httpApi:
+          path: /locations/{id}
+          method: DELETE
+
+  # Departments endpoints
+  getDepartments:
+    handler: src/handlers/departments.getDepartments
+    description: Get all departments
+    events:
+      - httpApi:
+          path: /departments
+          method: GET
+
+  getDepartment:
+    handler: src/handlers/departments.getDepartment
+    description: Get single department
+    events:
+      - httpApi:
+          path: /departments/{id}
+          method: GET
+
+  createDepartment:
+    handler: src/handlers/departments.createDepartment
+    description: Create new department
+    events:
+      - httpApi:
+          path: /departments
+          method: POST
+
+  updateDepartment:
+    handler: src/handlers/departments.updateDepartment
+    description: Update department
+    events:
+      - httpApi:
+          path: /departments/{id}
+          method: PUT
+
+  deleteDepartment:
+    handler: src/handlers/departments.deleteDepartment
+    description: Delete department
+    events:
+      - httpApi:
+          path: /departments/{id}
+          method: DELETE
+
+  # Doctors endpoints
+  getDoctors:
+    handler: src/handlers/doctors.getDoctors
+    description: Get all doctors
+    events:
+      - httpApi:
+          path: /doctors
+          method: GET
+
+  getDoctor:
+    handler: src/handlers/doctors.getDoctor
+    description: Get single doctor
+    events:
+      - httpApi:
+          path: /doctors/{id}
+          method: GET
+
+  createDoctor:
+    handler: src/handlers/doctors.createDoctor
+    description: Create new doctor
+    events:
+      - httpApi:
+          path: /doctors
+          method: POST
+
+  updateDoctor:
+    handler: src/handlers/doctors.updateDoctor
+    description: Update doctor
+    events:
+      - httpApi:
+          path: /doctors/{id}
+          method: PUT
+
+  deleteDoctor:
+    handler: src/handlers/doctors.deleteDoctor
+    description: Delete doctor
+    events:
+      - httpApi:
+          path: /doctors/{id}
+          method: DELETE
+
+  # Banners endpoints
+  getBanners:
+    handler: src/handlers/banners.getBanners
+    description: Get all banners
+    events:
+      - httpApi:
+          path: /banners
+          method: GET
+
+  getBanner:
+    handler: src/handlers/banners.getBanner
+    description: Get single banner
+    events:
+      - httpApi:
+          path: /banners/{id}
+          method: GET
+
+  createBanner:
+    handler: src/handlers/banners.createBanner
+    description: Create new banner
+    events:
+      - httpApi:
+          path: /banners
+          method: POST
+
+  updateBanner:
+    handler: src/handlers/banners.updateBanner
+    description: Update banner
+    events:
+      - httpApi:
+          path: /banners/{id}
+          method: PUT
+
+  deleteBanner:
+    handler: src/handlers/banners.deleteBanner
+    description: Delete banner
+    events:
+      - httpApi:
+          path: /banners/{id}
+          method: DELETE
+
+  # Helpline endpoints
+  getHelpline:
+    handler: src/handlers/helpline.getHelpline
+    description: Get active helpline number
+    events:
+      - httpApi:
+          path: /helpline
+          method: GET
+
+  getAllHelplines:
+    handler: src/handlers/helpline.getAllHelplines
+    description: Get all helpline entries
+    events:
+      - httpApi:
+          path: /helpline/all
+          method: GET
+
+  createHelpline:
+    handler: src/handlers/helpline.createHelpline
+    description: Create or update helpline
+    events:
+      - httpApi:
+          path: /helpline
+          method: POST
+
+  updateHelpline:
+    handler: src/handlers/helpline.updateHelpline
+    description: Update specific helpline entry
+    events:
+      - httpApi:
+          path: /helpline/{id}
+          method: PUT
+
+  deleteHelpline:
+    handler: src/handlers/helpline.deleteHelpline
+    description: Delete helpline entry
+    events:
+      - httpApi:
+          path: /helpline/{id}
+          method: DELETE
+
 # Plugins for local development and environment management
 plugins:
   - serverless-dotenv-plugin

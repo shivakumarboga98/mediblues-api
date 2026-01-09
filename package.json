@@ -10,7 +10,8 @@
     "deploy:dev": "serverless deploy --stage dev",
     "remove": "serverless remove",
     "logs": "serverless logs -f",
-    "test": "node --test"
+    "test": "node --test",
+    "init-db": "node scripts/init-db.js"
   },
   "keywords": [
     "serverless",
@@ -21,7 +22,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "mysql2": "^3.6.5"
   },
   "devDependencies": {
     "serverless": "^3.38.0",
