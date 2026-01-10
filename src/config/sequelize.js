@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local' });
 
-// Initialize Sequelize immediately
+// Initialize Sequelize with Lambda-optimized settings
 export const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
@@ -14,20 +14,20 @@ export const sequelize = new Sequelize(
     dialect: 'mysql',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     pool: {
-      max: 10,
-      min: 0,
-      acquire: 30000,
-      idle: 10000
+      max: 2,        // Reduced for Lambda
+      min: 0,        // Start with no connections
+      acquire: 10000, // Reduced from 30s to 10s
+      idle: 1000     // Reduced from 10s to 1s
     },
     define: {
       timestamps: true,
       underscored: false
+    },
+    dialectOptions: {
+      connectTimeout: 5000 // 5 second connection timeout
     }
   }
 );
 
-// Test connection immediately (optional)
-sequelize
-  .authenticate()
-  .then(() => console.log('Sequelize connection established successfully.'))
-  .catch((error) => console.error('Unable to connect to the database:', error));
+// DO NOT call authenticate() here - it blocks Lambda initialization
+// Connection will be established lazily on first query

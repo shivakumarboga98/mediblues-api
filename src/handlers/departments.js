@@ -7,7 +7,7 @@ import { Department, Location, Doctor } from '../models/index.js';
 export const getDepartments = async (event) => {
   try {
     const departments = await Department.findAll({
-      attributes: ['id', 'name', 'heading', 'description', 'image', 'createdAt', 'updatedAt'],
+      attributes: ['id', 'name', 'heading', 'description', 'image', 'overview', 'achievements', 'legacy', 'treatments', 'facilities', 'createdAt', 'updatedAt'],
       include: [
         {
           model: Location,
@@ -35,7 +35,7 @@ export const getDepartment = async (event) => {
     const { id } = event.pathParameters;
 
     const department = await Department.findByPk(id, {
-      attributes: ['id', 'name', 'heading', 'description', 'image', 'createdAt', 'updatedAt'],
+      attributes: ['id', 'name', 'heading', 'description', 'image', 'overview', 'achievements', 'legacy', 'treatments', 'facilities', 'createdAt', 'updatedAt'],
       include: [
         {
           model: Location,
@@ -169,6 +169,45 @@ export const updateDepartment = async (event) => {
   } catch (error) {
     console.error('Error updating department:', error);
     return errorResponse('Failed to update department', 500);
+  }
+};
+
+/**
+ * PATCH /admin/departments/{id} - Update department content (achievements, treatments, facilities)
+ */
+export const updateDepartmentContent = async (event) => {
+  try {
+    const { id } = event.pathParameters;
+    const body = JSON.parse(event.body || '{}');
+
+    const department = await Department.findByPk(id);
+    if (!department) {
+      return errorResponse('Department not found', 404);
+    }
+
+    const { overview, achievements, legacy, treatments, facilities } = body;
+
+    // Update fields if provided
+    const updateData = {};
+    if (overview !== undefined) updateData.overview = overview;
+    if (achievements !== undefined) updateData.achievements = achievements;
+    if (legacy !== undefined) updateData.legacy = legacy;
+    if (treatments !== undefined) updateData.treatments = treatments;
+    if (facilities !== undefined) updateData.facilities = facilities;
+
+    if (Object.keys(updateData).length > 0) {
+      await department.update(updateData);
+    }
+
+    // Fetch and return updated department
+    const updatedDepartment = await Department.findByPk(id, {
+      attributes: ['id', 'name', 'heading', 'description', 'image', 'overview', 'achievements', 'legacy', 'treatments', 'facilities', 'createdAt', 'updatedAt']
+    });
+
+    return successResponse(updatedDepartment);
+  } catch (error) {
+    console.error('Error updating department content:', error);
+    return errorResponse('Failed to update department content', 500);
   }
 };
 

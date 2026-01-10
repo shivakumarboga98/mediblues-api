@@ -7,8 +7,8 @@ provider:
   runtime: nodejs20.x
   stage: ${opt:stage, 'dev'}
   region: ap-south-1
-  memorySize: 256
-  timeout: 10
+  memorySize: 512
+  timeout: 29
   
   # Environment variables available to all functions
   environment:
@@ -137,6 +137,14 @@ functions:
       - httpApi:
           path: /departments/update
           method: POST
+
+  updateDepartmentContent:
+    handler: src/handlers/departments.updateDepartmentContent
+    description: Update department content (achievements, treatments, facilities)
+    events:
+      - httpApi:
+          path: /admin/departments/{id}
+          method: PATCH
 
   deleteDepartment:
     handler: src/handlers/departments.deleteDepartment
@@ -278,7 +286,46 @@ functions:
           path: /contact-info/{id}
           method: DELETE
 
-# Plugins for local development and environment management
+  # Appointments endpoints
+  createAppointment:
+    handler: src/handlers/appointments.createAppointment
+    description: Create new appointment
+    events:
+      - httpApi:
+          path: /appointments
+          method: POST
+
+  getAppointments:
+    handler: src/handlers/appointments.getAppointments
+    description: Get all appointments
+    events:
+      - httpApi:
+          path: /appointments
+          method: GET
+
+  getAppointmentById:
+    handler: src/handlers/appointments.getAppointmentById
+    description: Get single appointment
+    events:
+      - httpApi:
+          path: /appointments/{id}
+          method: GET
+
+  updateAppointment:
+    handler: src/handlers/appointments.updateAppointment
+    description: Update appointment
+    events:
+      - httpApi:
+          path: /appointments/{id}
+          method: PUT
+
+  deleteAppointment:
+    handler: src/handlers/appointments.deleteAppointment
+    description: Delete appointment
+    events:
+      - httpApi:
+          path: /appointments/{id}
+          method: DELETE
 plugins:
   - serverless-dotenv-plugin
   - serverless-offline

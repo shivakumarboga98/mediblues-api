@@ -54,8 +54,30 @@ export const Department = sequelize.define('Department', {
     allowNull: true
   },
   image: {
-    type: DataTypes.TEXT('long'), // matches longtext
+    type: DataTypes.TEXT('long'),
     allowNull: true
+  },
+  overview: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  achievements: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  legacy: {
+    type: DataTypes.STRING(500),
+    allowNull: true
+  },
+  treatments: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: []
+  },
+  facilities: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: []
   }
 
 }, {
@@ -219,6 +241,73 @@ export const ContactInfo = sequelize.define('ContactInfo', {
   timestamps: true
 });
 
+export const Appointment = sequelize.define('Appointment', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  fullName: {
+    type: DataTypes.STRING(255),
+    allowNull: false
+  },
+  mobileNumber: {
+    type: DataTypes.STRING(20),
+    allowNull: false
+  },
+  email: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  location_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: Location,
+      key: 'id'
+    }
+  },
+  department_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: Department,
+      key: 'id'
+    }
+  },
+  doctor_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: Doctor,
+      key: 'id'
+    }
+  },
+  reasonForVisit: {
+    type: DataTypes.STRING(255),
+    allowNull: false
+  },
+  message: {
+    type: DataTypes.TEXT,
+    allowNull: false
+  },
+  preferredDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
+  },
+  preferredTime: {
+    type: DataTypes.STRING(10),
+    allowNull: true
+  },
+  status: {
+    type: DataTypes.STRING(50),
+    defaultValue: 'pending'
+  }
+}, {
+  tableName: 'appointments',
+  timestamps: true
+});
+
 // Define relationships
 Doctor.belongsTo(Location, { foreignKey: 'location_id', as: 'location' });
 Location.hasMany(Doctor, { foreignKey: 'location_id', as: 'doctors' });
@@ -231,5 +320,15 @@ DoctorSpecialization.belongsTo(Doctor, { foreignKey: 'doctor_id' });
 
 Department.belongsToMany(Location, { through: DepartmentLocation, foreignKey: 'department_id', otherKey: 'location_id', as: 'locations' });
 Location.belongsToMany(Department, { through: DepartmentLocation, foreignKey: 'location_id', otherKey: 'department_id', as: 'departments' });
+
+// Appointment relationships
+Appointment.belongsTo(Location, { foreignKey: 'location_id', as: 'location' });
+Location.hasMany(Appointment, { foreignKey: 'location_id', as: 'appointments' });
+
+Appointment.belongsTo(Department, { foreignKey: 'department_id', as: 'department' });
+Department.hasMany(Appointment, { foreignKey: 'department_id', as: 'appointments' });
+
+Appointment.belongsTo(Doctor, { foreignKey: 'doctor_id', as: 'doctor' });
+Doctor.hasMany(Appointment, { foreignKey: 'doctor_id', as: 'appointments' });
 
 export default sequelize;

@@ -11,7 +11,8 @@
     "remove": "serverless remove",
     "logs": "serverless logs -f",
     "test": "node --test",
-    "init-db": "node scripts/init-db.js"
+    "init-db": "node scripts/init-db.js",
+    "seed-departments": "node scripts/seed-departments.js"
   },
   "keywords": [
     "serverless",
