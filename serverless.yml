@@ -15,7 +15,6 @@ provider:
     STAGE: ${self:provider.stage}
     NODE_ENV: ${env:NODE_ENV, 'development'}
     S3_BUCKET_NAME: ${env:S3_BUCKET_NAME, 'mediblues-assets'}
-    AWS_REGION: ${env:AWS_REGION, 'eu-north-1'}
     CLOUDFRONT_DOMAIN: ${env:CLOUDFRONT_DOMAIN, ''}
     DB_HOST: ${env:DB_HOST}
     DB_PORT: ${env:DB_PORT, '3306'}
