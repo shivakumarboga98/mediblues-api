@@ -3,11 +3,16 @@ import { Doctor, Location, Department, DoctorSpecialization } from '../models/in
 
 /**
  * GET /doctors - Get all doctors with full details
+ * Supports pagination via query parameters: limit and offset
  */
 export const getDoctors = async (event) => {
   try {
-    const doctors = await Doctor.findAll({
-      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'location_id', 'createdAt', 'updatedAt'],
+    // Get pagination parameters from query string
+    const limit = event.queryStringParameters?.limit ? parseInt(event.queryStringParameters.limit) : null;
+    const offset = event.queryStringParameters?.offset ? parseInt(event.queryStringParameters.offset) : 0;
+
+    const queryOptions = {
+      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'availability', 'location_id', 'createdAt', 'updatedAt'],
       include: [
         {
           model: Location,
@@ -25,30 +30,63 @@ export const getDoctors = async (event) => {
           model: DoctorSpecialization,
           as: 'specializations',
           attributes: ['specialization'],
-          required: false
+          required: false,
+          raw: false
         }
       ],
-      order: [['createdAt', 'DESC']]
+      order: [['id', 'DESC']], // Order by ID for consistent pagination
+      subQuery: false,
+      raw: false
+    };
+
+    // Add pagination if limit is provided
+    if (limit !== null) {
+      queryOptions.limit = limit;
+      queryOptions.offset = offset;
+    }
+
+    // Get total count for pagination info
+    const totalCount = await Doctor.count();
+
+    const doctors = await Doctor.findAll(queryOptions);
+
+    const formattedDoctors = doctors.map(doc => {
+      const docData = doc.toJSON ? doc.toJSON() : doc;
+      return {
+        id: docData.id,
+        name: docData.name,
+        qualifications: Array.isArray(docData.qualifications) ? docData.qualifications : (docData.qualifications ? JSON.parse(docData.qualifications) : []),
+        experience: docData.experience,
+        image: docData.image,
+        availability: docData.availability,
+        createdAt: docData.createdAt,
+        updatedAt: docData.updatedAt,
+        location_id: docData.location_id,
+        location: docData.location || null,
+        departments: Array.isArray(docData.departments) ? docData.departments : [],
+        specializations: Array.isArray(docData.specializations) 
+          ? docData.specializations.map(s => s.specialization || s)
+          : []
+      };
     });
 
-    const formattedDoctors = doctors.map(doc => ({
-      id: doc.id,
-      name: doc.name,
-      qualifications: Array.isArray(doc.qualifications) ? doc.qualifications : (doc.qualifications ? JSON.parse(doc.qualifications) : []),
-      experience: doc.experience,
-      image: doc.image,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-      location_id: doc.location_id,
-      location: doc.location,
-      departments: doc.departments,
-      specializations: doc.specializations.map(s => s.specialization)
-    }));
+    // Return with pagination metadata if limit was used
+    if (limit !== null) {
+      return successResponse({
+        doctors: formattedDoctors,
+        pagination: {
+          total: totalCount,
+          limit: limit,
+          offset: offset,
+          hasMore: (offset + limit) < totalCount
+        }
+      });
+    }
 
     return successResponse(formattedDoctors);
   } catch (error) {
     console.error('Error fetching doctors:', error);
-    return errorResponse('Failed to fetch doctors', 500);
+    return errorResponse('Failed to fetch doctors', 500, { message: error.message });
   }
 };
 
@@ -60,7 +98,7 @@ export const getDoctor = async (event) => {
     const { id } = event.pathParameters;
     
     const doctor = await Doctor.findByPk(id, {
-      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'location_id', 'createdAt', 'updatedAt'],
+      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'availability', 'location_id', 'createdAt', 'updatedAt'],
       include: [
         {
           model: Location,
@@ -71,37 +109,45 @@ export const getDoctor = async (event) => {
           model: Department,
           as: 'departments',
           attributes: ['id', 'name'],
-          through: { attributes: [] }
+          through: { attributes: [] },
+          required: false
         },
         {
           model: DoctorSpecialization,
           as: 'specializations',
           attributes: ['specialization'],
-          required: false
+          required: false,
+          raw: false
         }
-      ]
+      ],
+      subQuery: false,
+      raw: false
     });
 
     if (!doctor) {
       return errorResponse('Doctor not found', 404);
     }
 
+    const docData = doctor.toJSON ? doctor.toJSON() : doctor;
     return successResponse({
-      id: doctor.id,
-      name: doctor.name,
-      qualifications: Array.isArray(doctor.qualifications) ? doctor.qualifications : (doctor.qualifications ? JSON.parse(doctor.qualifications) : []),
-      experience: doctor.experience,
-      image: doctor.image,
-      createdAt: doctor.createdAt,
-      updatedAt: doctor.updatedAt,
-      location_id: doctor.location_id,
-      location: doctor.location,
-      departments: doctor.departments,
-      specializations: doctor.specializations.map(s => s.specialization)
+      id: docData.id,
+      name: docData.name,
+      qualifications: Array.isArray(docData.qualifications) ? docData.qualifications : (docData.qualifications ? JSON.parse(docData.qualifications) : []),
+      experience: docData.experience,
+      image: docData.image,
+      availability: docData.availability,
+      createdAt: docData.createdAt,
+      updatedAt: docData.updatedAt,
+      location_id: docData.location_id,
+      location: docData.location || null,
+      departments: Array.isArray(docData.departments) ? docData.departments : [],
+      specializations: Array.isArray(docData.specializations)
+        ? docData.specializations.map(s => s.specialization || s)
+        : []
     });
   } catch (error) {
     console.error('Error fetching doctor:', error);
-    return errorResponse('Failed to fetch doctor', 500);
+    return errorResponse('Failed to fetch doctor', 500, { message: error.message });
   }
 };
 

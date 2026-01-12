@@ -49,6 +49,14 @@ functions:
       - httpApi:
           path: /health
           method: GET
+  
+  getDashboardStatistics:
+    handler: src/handlers/statistics.getDashboardStatistics
+    description: Get dashboard statistics (counts and aggregations)
+    events:
+      - httpApi:
+          path: /statistics
+          method: POST
     
   contact:
     handler: src/handlers/contact.handler
@@ -65,6 +73,14 @@ functions:
     events:
       - httpApi:
           path: /locations
+          method: GET
+
+  getLocationsSimple:
+    handler: src/handlers/locations.getLocationsSimple
+    description: Get all locations with minimal data (optimized for dropdowns)
+    events:
+      - httpApi:
+          path: /locations/list/simple
           method: GET
 
   getLocation:
@@ -143,8 +159,8 @@ functions:
     description: Update department content (achievements, treatments, facilities)
     events:
       - httpApi:
-          path: /admin/departments/{id}
-          method: PATCH
+          path: /departments/update-content
+          method: POST
 
   deleteDepartment:
     handler: src/handlers/departments.deleteDepartment
@@ -297,11 +313,11 @@ functions:
 
   getAppointments:
     handler: src/handlers/appointments.getAppointments
-    description: Get all appointments
+    description: Get all appointments with filters and pagination
     events:
       - httpApi:
-          path: /appointments
-          method: GET
+          path: /appointments/list
+          method: POST
 
   getAppointmentById:
     handler: src/handlers/appointments.getAppointmentById
@@ -326,6 +342,48 @@ functions:
       - httpApi:
           path: /appointments/{id}
           method: DELETE
+
+  # Packages endpoints
+  getAllPackages:
+    handler: src/handlers/packages.getAllPackages
+    description: Get all health check packages
+    events:
+      - httpApi:
+          path: /packages
+          method: GET
+
+  getPackageById:
+    handler: src/handlers/packages.getPackageById
+    description: Get single package
+    events:
+      - httpApi:
+          path: /packages/get
+          method: POST
+
+  createPackage:
+    handler: src/handlers/packages.createPackage
+    description: Create new package
+    events:
+      - httpApi:
+          path: /packages
+          method: POST
+
+  updatePackage:
+    handler: src/handlers/packages.updatePackage
+    description: Update package
+    events:
+      - httpApi:
+          path: /packages/update
+          method: POST
+
+  deletePackage:
+    handler: src/handlers/packages.deletePackage
+    description: Delete package
+    events:
+      - httpApi:
+          path: /packages/delete
+          method: POST
+
 plugins:
   - serverless-dotenv-plugin
   - serverless-offline

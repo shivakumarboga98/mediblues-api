@@ -177,8 +177,12 @@ export const updateDepartment = async (event) => {
  */
 export const updateDepartmentContent = async (event) => {
   try {
-    const { id } = event.pathParameters;
     const body = JSON.parse(event.body || '{}');
+    const { id } = body;
+
+    if (!id) {
+      return errorResponse('Department ID is required', 400);
+    }
 
     const department = await Department.findByPk(id);
     if (!department) {

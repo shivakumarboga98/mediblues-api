@@ -25,7 +25,8 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "mysql2": "^3.6.5",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "serverless": "^3.38.0",

@@ -108,6 +108,11 @@ export const Doctor = sequelize.define('Doctor', {
     type: DataTypes.STRING(500),
     allowNull: true
   },
+  availability: {
+    type: DataTypes.ENUM('available', 'busy', 'on_leave'),
+    allowNull: true,
+    defaultValue: 'available'
+  },
   location_id: {
     type: DataTypes.INTEGER,
     allowNull: true,
@@ -208,6 +213,14 @@ export const Banner = sequelize.define('Banner', {
   link: {
     type: DataTypes.STRING(500),
     allowNull: true
+  },
+  isActive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  isHero: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
 }, {
   tableName: 'banners',
@@ -261,7 +274,7 @@ export const Appointment = sequelize.define('Appointment', {
   },
   location_id: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
     references: {
       model: Location,
       key: 'id'
@@ -285,7 +298,7 @@ export const Appointment = sequelize.define('Appointment', {
   },
   reasonForVisit: {
     type: DataTypes.STRING(255),
-    allowNull: false
+    allowNull: true
   },
   message: {
     type: DataTypes.TEXT,
@@ -302,13 +315,114 @@ export const Appointment = sequelize.define('Appointment', {
   status: {
     type: DataTypes.STRING(50),
     defaultValue: 'pending'
+  },
+  package_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'packages',
+      key: 'id'
+    }
+  },
+  type: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 1,
+    comment: '1 = normal appointment, 2 = package booking'
   }
 }, {
   tableName: 'appointments',
   timestamps: true
 });
 
-// Define relationships
+// Health Check Package and Test relationships
+export const Package = sequelize.define('Package', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  name: {
+    type: DataTypes.STRING(255),
+    allowNull: false
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  price: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false
+  },
+  discountPrice: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true
+  },
+  keyFeatures: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: []
+  },
+  tests: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [],
+    comment: 'JSON array of test objects with {id, name} - each package has independent tests'
+  },
+  duration: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  reportDelivery: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  image: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  ageRange: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    defaultValue: 'All ages'
+  },
+  isActive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  }
+}, {
+  tableName: 'packages',
+  timestamps: true
+});
+
+export const Test = sequelize.define('Test', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  name: {
+    type: DataTypes.STRING(255),
+    allowNull: false
+  },
+  category: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  normalRange: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  unit: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  }
+}, {
+  tableName: 'tests',
+  timestamps: true
+});
+
+// Define all relationships AFTER all models are defined
 Doctor.belongsTo(Location, { foreignKey: 'location_id', as: 'location' });
 Location.hasMany(Doctor, { foreignKey: 'location_id', as: 'doctors' });
 
@@ -330,5 +444,9 @@ Department.hasMany(Appointment, { foreignKey: 'department_id', as: 'appointments
 
 Appointment.belongsTo(Doctor, { foreignKey: 'doctor_id', as: 'doctor' });
 Doctor.hasMany(Appointment, { foreignKey: 'doctor_id', as: 'appointments' });
+
+// Package relationships (now Package is defined)
+Appointment.belongsTo(Package, { foreignKey: 'package_id', as: 'package' });
+Package.hasMany(Appointment, { foreignKey: 'package_id', as: 'appointments' });
 
 export default sequelize;

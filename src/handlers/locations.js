@@ -35,6 +35,24 @@ export const getLocations = async (event) => {
 };
 
 /**
+ * GET /locations/list/simple - Get all locations with minimal data (optimized for dropdowns)
+ */
+export const getLocationsSimple = async (event) => {
+  try {
+    const locations = await Location.findAll({
+      attributes: ['id', 'name', 'address', 'phone', 'email'],
+      where: { enabled: true },
+      order: [['name', 'ASC']]
+    });
+
+    return successResponse(locations);
+  } catch (error) {
+    console.error('Error fetching locations:', error);
+    return errorResponse('Failed to fetch locations', 500);
+  }
+};
+
+/**
  * GET /locations/{id} - Get single location with related data
  */
 export const getLocation = async (event) => {
