@@ -1,6 +1,6 @@
-import dotenv from 'dotenv';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import crypto from 'crypto';
+const dotenv = require('dotenv');
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const crypto = require('crypto');
 
 // Load environment variables from .env.local
 dotenv.config({ path: '.env.local' });
@@ -28,7 +28,7 @@ const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'mediblues';
  * @param {string} folder - Folder in S3 (e.g., 'banners', 'doctors', 'departments')
  * @returns {Promise<string>} S3 URL of uploaded image
  */
-export const uploadToS3 = async (fileBuffer, fileName, folder) => {
+const uploadToS3 = async (fileBuffer, fileName, folder) => {
   try {
     // Generate unique file name to avoid conflicts
     const fileExtension = fileName.split('.').pop();
@@ -83,7 +83,7 @@ const getContentType = (extension) => {
  * Delete image from S3
  * @param {string} s3Url - S3 URL of the image
  */
-export const deleteFromS3 = async (s3Url) => {
+const deleteFromS3 = async (s3Url) => {
   try {
     // Extract key from S3 URL
     const urlParts = s3Url.split(`${BUCKET_NAME}.s3.${process.env.AWS_REGION || 'eu-north-1'}.amazonaws.com/`);
@@ -93,7 +93,6 @@ export const deleteFromS3 = async (s3Url) => {
 
     const key = urlParts[1];
 
-    const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
     const command = new DeleteObjectCommand({
       Bucket: BUCKET_NAME,
       Key: key
@@ -107,4 +106,4 @@ export const deleteFromS3 = async (s3Url) => {
   }
 };
 
-export default s3Client;
+module.exports = { uploadToS3, deleteFromS3, s3Client };
