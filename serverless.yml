@@ -6,7 +6,7 @@ provider:
   name: aws
   runtime: nodejs20.x
   stage: ${opt:stage, 'dev'}
-  region: ap-south-1
+  region: eu-north-1
   memorySize: 512
   timeout: 29
   
@@ -14,6 +14,23 @@ provider:
   environment:
     STAGE: ${self:provider.stage}
     NODE_ENV: ${env:NODE_ENV, 'development'}
+    S3_BUCKET_NAME: mediblues
+    AWS_REGION: eu-north-1
+  
+  # IAM Permissions for S3 access
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+          Resource: "arn:aws:s3:::mediblues/*"
+        - Effect: Allow
+          Action:
+            - s3:ListBucket
+          Resource: "arn:aws:s3:::mediblues"
   
   # HTTP API Configuration (faster & cheaper than REST API)
   httpApi:
@@ -50,12 +67,29 @@ functions:
           path: /health
           method: GET
   
+  # Admin Authentication
+  adminLogin:
+    handler: src/handlers/adminAuth.adminLogin
+    description: Admin login endpoint - generates JWT token
+    events:
+      - httpApi:
+          path: /admin/login
+          method: POST
+  
   getDashboardStatistics:
     handler: src/handlers/statistics.getDashboardStatistics
     description: Get dashboard statistics (counts and aggregations)
     events:
       - httpApi:
           path: /statistics
+          method: POST
+  
+  uploadImage:
+    handler: src/handlers/upload.uploadImage
+    description: Upload image to S3 bucket
+    events:
+      - httpApi:
+          path: /upload
           method: POST
     
   contact:
@@ -108,7 +142,7 @@ functions:
           method: PUT
       - httpApi:
           path: /locations/update
-          method: POST
+          method: PUT
 
   deleteLocation:
     handler: src/handlers/locations.deleteLocation
@@ -152,7 +186,7 @@ functions:
           method: PUT
       - httpApi:
           path: /departments/update
-          method: POST
+          method: PUT
 
   updateDepartmentContent:
     handler: src/handlers/departments.updateDepartmentContent
@@ -160,7 +194,7 @@ functions:
     events:
       - httpApi:
           path: /departments/update-content
-          method: POST
+          method: PUT
 
   deleteDepartment:
     handler: src/handlers/departments.deleteDepartment
@@ -204,7 +238,7 @@ functions:
           method: PUT
       - httpApi:
           path: /doctors/update
-          method: POST
+          method: PUT
 
   deleteDoctor:
     handler: src/handlers/doctors.deleteDoctor
@@ -248,7 +282,7 @@ functions:
           method: PUT
       - httpApi:
           path: /banners/update
-          method: POST
+          method: PUT
 
   deleteBanner:
     handler: src/handlers/banners.deleteBanner
@@ -374,7 +408,7 @@ functions:
     events:
       - httpApi:
           path: /packages/update
-          method: POST
+          method: PUT
 
   deletePackage:
     handler: src/handlers/packages.deletePackage

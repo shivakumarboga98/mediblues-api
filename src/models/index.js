@@ -1,9 +1,9 @@
-import { DataTypes } from 'sequelize';
-import { sequelize } from '../config/sequelize.js';
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/sequelize.js');
 
 
 
-export const Location = sequelize.define('Location', {
+const Location = sequelize.define('Location', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -35,7 +35,7 @@ export const Location = sequelize.define('Location', {
   timestamps: true
 });
 
-export const Department = sequelize.define('Department', {
+const Department = sequelize.define('Department', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -85,7 +85,7 @@ export const Department = sequelize.define('Department', {
   timestamps: true
 });
 
-export const Doctor = sequelize.define('Doctor', {
+const Doctor = sequelize.define('Doctor', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -126,7 +126,7 @@ export const Doctor = sequelize.define('Doctor', {
   timestamps: true
 });
 
-export const DoctorDepartment = sequelize.define('DoctorDepartment', {
+const DoctorDepartment = sequelize.define('DoctorDepartment', {
   doctor_id: {
     type: DataTypes.INTEGER,
     references: {
@@ -148,7 +148,7 @@ export const DoctorDepartment = sequelize.define('DoctorDepartment', {
   timestamps: false
 });
 
-export const DoctorSpecialization = sequelize.define('DoctorSpecialization', {
+const DoctorSpecialization = sequelize.define('DoctorSpecialization', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -170,7 +170,7 @@ export const DoctorSpecialization = sequelize.define('DoctorSpecialization', {
   timestamps: false
 });
 
-export const DepartmentLocation = sequelize.define('DepartmentLocation', {
+const DepartmentLocation = sequelize.define('DepartmentLocation', {
   department_id: {
     type: DataTypes.INTEGER,
     references: {
@@ -192,7 +192,7 @@ export const DepartmentLocation = sequelize.define('DepartmentLocation', {
   timestamps: false
 });
 
-export const Banner = sequelize.define('Banner', {
+const Banner = sequelize.define('Banner', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -227,7 +227,7 @@ export const Banner = sequelize.define('Banner', {
   timestamps: true
 });
 
-export const ContactInfo = sequelize.define('ContactInfo', {
+const ContactInfo = sequelize.define('ContactInfo', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -254,7 +254,7 @@ export const ContactInfo = sequelize.define('ContactInfo', {
   timestamps: true
 });
 
-export const Appointment = sequelize.define('Appointment', {
+const Appointment = sequelize.define('Appointment', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -336,7 +336,7 @@ export const Appointment = sequelize.define('Appointment', {
 });
 
 // Health Check Package and Test relationships
-export const Package = sequelize.define('Package', {
+const Package = sequelize.define('Package', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -395,7 +395,7 @@ export const Package = sequelize.define('Package', {
   timestamps: true
 });
 
-export const Test = sequelize.define('Test', {
+const Test = sequelize.define('Test', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -449,4 +449,17 @@ Doctor.hasMany(Appointment, { foreignKey: 'doctor_id', as: 'appointments' });
 Appointment.belongsTo(Package, { foreignKey: 'package_id', as: 'package' });
 Package.hasMany(Appointment, { foreignKey: 'package_id', as: 'appointments' });
 
-export default sequelize;
+module.exports = {
+  Location,
+  Department,
+  Doctor,
+  DoctorDepartment,
+  DoctorSpecialization,
+  DepartmentLocation,
+  Banner,
+  ContactInfo,
+  Appointment,
+  Package,
+  Test,
+  sequelize
+};

@@ -1,8 +1,11 @@
-import { Package } from '../models/index.js';
-import { successResponse, errorResponse } from '../utils/response.js';
+const { Package } = require('../models/index.js');
+const { successResponse, errorResponse } = require('../utils/response.js');
+const { protectedEndpoint } = require('./adminAuth.js');
 
-// Get all packages with tests
-export const getAllPackages = async (event) => {
+/**
+ * GET /packages - Get all packages with tests (Public read)
+ */
+const getAllPackagesHandler = async (event) => {
   try {
     // Get pagination parameters from query string
     const queryParams = event.queryStringParameters || {};
@@ -54,8 +57,10 @@ export const getAllPackages = async (event) => {
   }
 };
 
-// Get package by ID with tests
-export const getPackageById = async (event) => {
+/**
+ * GET /packages/:id - Get package by ID with tests (Public read)
+ */
+const getPackageByIdHandler = async (event) => {
   try {
     const body = JSON.parse(event.body || '{}');
     const packageId = body.id;
@@ -77,9 +82,13 @@ export const getPackageById = async (event) => {
   }
 };
 
-// Create new package (Admin only)
-export const createPackage = async (event) => {
+/**
+ * POST /packages - Create new package (Admin only - JWT protected)
+ */
+const createPackageHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} creating package`);
+    
     const body = JSON.parse(event.body || '{}');
     const { name, description, price, discountPrice, keyFeatures, duration, reportDelivery, image, ageRange, tests = [] } = body;
 
@@ -107,9 +116,13 @@ export const createPackage = async (event) => {
   }
 };
 
-// Update package (Admin only)
-export const updatePackage = async (event) => {
+/**
+ * PUT /packages/:id - Update package (Admin only - JWT protected)
+ */
+const updatePackageHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} updating package`);
+    
     const body = JSON.parse(event.body || '{}');
     const { id, name, description, price, discountPrice, keyFeatures, duration, reportDelivery, image, isActive, ageRange, tests = [] } = body;
 
@@ -143,9 +156,13 @@ export const updatePackage = async (event) => {
   }
 };
 
-// Delete package (Admin only)
-export const deletePackage = async (event) => {
+/**
+ * DELETE /packages/:id - Delete package (Admin only - JWT protected)
+ */
+const deletePackageHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} deleting package`);
+    
     const body = JSON.parse(event.body || '{}');
     const packageId = body.id;
 
@@ -165,3 +182,10 @@ export const deletePackage = async (event) => {
     return errorResponse('Failed to delete package', 500);
   }
 };
+
+// Export handlers
+module.exports.getAllPackages = getAllPackagesHandler;
+module.exports.getPackageById = getPackageByIdHandler;
+module.exports.createPackage = protectedEndpoint(createPackageHandler);
+module.exports.updatePackage = protectedEndpoint(updatePackageHandler);
+module.exports.deletePackage = protectedEndpoint(deletePackageHandler);

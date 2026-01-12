@@ -1,10 +1,11 @@
-import { successResponse, errorResponse } from '../utils/response.js';
-import { Banner } from '../models/index.js';
+const { successResponse, errorResponse } = require('../utils/response.js');
+const { Banner } = require('../models/index.js');
+const { protectedEndpoint } = require('./adminAuth.js');
 
 /**
- * GET /banners - Get all banners
+ * GET /banners - Get all banners (Public read)
  */
-export const getBanners = async (event) => {
+const getBannersHandler = async (event) => {
   try {
     const banners = await Banner.findAll({
       attributes: ['id', 'title', 'description', 'image', 'link', 'createdAt'],
@@ -18,9 +19,9 @@ export const getBanners = async (event) => {
 };
 
 /**
- * GET /banners/{id} - Get single banner
+ * GET /banners/{id} - Get single banner (Public read)
  */
-export const getBanner = async (event) => {
+const getBannerHandler = async (event) => {
   try {
     const { id } = event.pathParameters;
     
@@ -38,10 +39,12 @@ export const getBanner = async (event) => {
 };
 
 /**
- * POST /banners - Create new banner
+ * POST /banners - Create new banner (Admin only - JWT protected)
  */
-export const createBanner = async (event) => {
+const createBannerHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} creating banner`);
+    
     const body = JSON.parse(event.body || '{}');
     const { title, description, image, link } = body;
 
@@ -67,10 +70,12 @@ export const createBanner = async (event) => {
 };
 
 /**
- * PUT /banners/{id} - Update banner
+ * PUT /banners/{id} - Update banner (Admin only - JWT protected)
  */
-export const updateBanner = async (event) => {
+const updateBannerHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} updating banner`);
+    
     // Get ID from path parameter or request body
     let id = event.pathParameters?.id;
     let body = JSON.parse(event.body || '{}');
@@ -116,10 +121,12 @@ export const updateBanner = async (event) => {
 };
 
 /**
- * DELETE /banners/{id} - Delete banner
+ * DELETE /banners/{id} - Delete banner (Admin only - JWT protected)
  */
-export const deleteBanner = async (event) => {
+const deleteBannerHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} deleting banner`);
+    
     const { id } = event.pathParameters;
 
     const banner = await Banner.findByPk(id);
@@ -134,3 +141,10 @@ export const deleteBanner = async (event) => {
     return errorResponse('Failed to delete banner', 500);
   }
 };
+
+// Export handlers
+module.exports.getBanners = getBannersHandler;
+module.exports.getBanner = getBannerHandler;
+module.exports.createBanner = protectedEndpoint(createBannerHandler);
+module.exports.updateBanner = protectedEndpoint(updateBannerHandler);
+module.exports.deleteBanner = protectedEndpoint(deleteBannerHandler);

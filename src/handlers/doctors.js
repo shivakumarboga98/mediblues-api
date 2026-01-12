@@ -1,11 +1,12 @@
-import { successResponse, errorResponse } from '../utils/response.js';
-import { Doctor, Location, Department, DoctorSpecialization } from '../models/index.js';
+const { successResponse, errorResponse } = require('../utils/response.js');
+const { Doctor, Location, Department, DoctorSpecialization } = require('../models/index.js');
+const { protectedEndpoint } = require('./adminAuth.js');
 
 /**
- * GET /doctors - Get all doctors with full details
+ * GET /doctors - Get all doctors with full details (Public read)
  * Supports pagination via query parameters: limit and offset
  */
-export const getDoctors = async (event) => {
+const getDoctorsHandler = async (event) => {
   try {
     // Get pagination parameters from query string
     const limit = event.queryStringParameters?.limit ? parseInt(event.queryStringParameters.limit) : null;
@@ -34,7 +35,7 @@ export const getDoctors = async (event) => {
           raw: false
         }
       ],
-      order: [['id', 'DESC']], // Order by ID for consistent pagination
+      order: [['id', 'DESC']],
       subQuery: false,
       raw: false
     };
@@ -91,9 +92,9 @@ export const getDoctors = async (event) => {
 };
 
 /**
- * GET /doctors/{id} - Get single doctor
+ * GET /doctors/{id} - Get single doctor (Public read)
  */
-export const getDoctor = async (event) => {
+const getDoctorHandler = async (event) => {
   try {
     const { id } = event.pathParameters;
     
@@ -152,10 +153,12 @@ export const getDoctor = async (event) => {
 };
 
 /**
- * POST /doctors - Create new doctor
+ * POST /doctors - Create new doctor (Admin only - JWT protected)
  */
-export const createDoctor = async (event) => {
+const createDoctorHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} creating doctor`);
+    
     const body = JSON.parse(event.body || '{}');
     const { name, qualifications, experience, location_id, departments, specializations, image } = body;
 
@@ -221,10 +224,12 @@ export const createDoctor = async (event) => {
 };
 
 /**
- * PUT /doctors/{id} - Update doctor
+ * PUT /doctors/{id} - Update doctor (Admin only - JWT protected)
  */
-export const updateDoctor = async (event) => {
+const updateDoctorHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} updating doctor`);
+    
     // Get ID from path parameter or request body
     let id = event.pathParameters?.id;
     let body = JSON.parse(event.body || '{}');
@@ -327,10 +332,12 @@ export const updateDoctor = async (event) => {
 };
 
 /**
- * DELETE /doctors/{id} - Delete doctor
+ * DELETE /doctors/{id} - Delete doctor (Admin only - JWT protected)
  */
-export const deleteDoctor = async (event) => {
+const deleteDoctorHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} deleting doctor`);
+    
     const { id } = event.pathParameters;
 
     // Check if doctor exists
@@ -346,3 +353,10 @@ export const deleteDoctor = async (event) => {
     return errorResponse('Failed to delete doctor', 500);
   }
 };
+
+// Export handlers
+module.exports.getDoctors = getDoctorsHandler;
+module.exports.getDoctor = getDoctorHandler;
+module.exports.createDoctor = protectedEndpoint(createDoctorHandler);
+module.exports.updateDoctor = protectedEndpoint(updateDoctorHandler);
+module.exports.deleteDoctor = protectedEndpoint(deleteDoctorHandler);

@@ -8,12 +8,15 @@
  * @param {number} statusCode - HTTP status code (default: 200)
  * @returns {Object} Lambda response object
  */
-export const successResponse = (data, statusCode = 200) => {
+const successResponse = (data, statusCode = 200) => {
   return {
     statusCode,
     headers: {
       'Content-Type': 'application/json',
-      'X-Request-Id': generateRequestId()
+      'X-Request-Id': generateRequestId(),
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Type, X-Is-Base64'
     },
     body: JSON.stringify(data)
   };
@@ -26,7 +29,7 @@ export const successResponse = (data, statusCode = 200) => {
  * @param {Object} details - Additional error details
  * @returns {Object} Lambda response object
  */
-export const errorResponse = (message, statusCode = 500, details = null) => {
+const errorResponse = (message, statusCode = 500, details = null) => {
   const errorBody = {
     error: message,
     statusCode,
@@ -41,7 +44,10 @@ export const errorResponse = (message, statusCode = 500, details = null) => {
     statusCode,
     headers: {
       'Content-Type': 'application/json',
-      'X-Request-Id': generateRequestId()
+      'X-Request-Id': generateRequestId(),
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Type, X-Is-Base64'
     },
     body: JSON.stringify(errorBody)
   };
@@ -54,3 +60,5 @@ export const errorResponse = (message, statusCode = 500, details = null) => {
 const generateRequestId = () => {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
+
+module.exports = { successResponse, errorResponse };

@@ -1,10 +1,11 @@
-import { successResponse, errorResponse } from '../utils/response.js';
-import { Department, Location, Doctor } from '../models/index.js';
+const { successResponse, errorResponse } = require('../utils/response.js');
+const { Department, Location, Doctor } = require('../models/index.js');
+const { protectedEndpoint } = require('./adminAuth.js');
 
 /**
- * GET /departments - Get all departments with full details
+ * GET /departments - Get all departments with full details (Public read)
  */
-export const getDepartments = async (event) => {
+const getDepartmentsHandler = async (event) => {
   try {
     const departments = await Department.findAll({
       attributes: ['id', 'name', 'heading', 'description', 'image', 'overview', 'achievements', 'legacy', 'treatments', 'facilities', 'createdAt', 'updatedAt'],
@@ -28,9 +29,9 @@ export const getDepartments = async (event) => {
 };
 
 /**
- * GET /departments/{id} - Get single department
+ * GET /departments/{id} - Get single department (Public read)
  */
-export const getDepartment = async (event) => {
+const getDepartmentHandler = async (event) => {
   try {
     const { id } = event.pathParameters;
 
@@ -59,10 +60,12 @@ export const getDepartment = async (event) => {
 };
 
 /**
- * POST /departments - Create new department
+ * POST /departments - Create new department (Admin only - JWT protected)
  */
-export const createDepartment = async (event) => {
+const createDepartmentHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} creating department`);
+    
     const body = JSON.parse(event.body || '{}');
     const { name, description, locations } = body;
 
@@ -101,10 +104,12 @@ export const createDepartment = async (event) => {
 };
 
 /**
- * PUT /departments/{id} - Update department
+ * PUT /departments/{id} - Update department (Admin only - JWT protected)
  */
-export const updateDepartment = async (event) => {
+const updateDepartmentHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} updating department`);
+    
     // Get ID from path parameter or request body
     let id = event.pathParameters?.id;
     let body = JSON.parse(event.body || '{}');
@@ -127,13 +132,14 @@ export const updateDepartment = async (event) => {
       return errorResponse('Department not found', 404);
     }
 
-    const { name, heading, description, locations } = body;
+    const { name, heading, description, image, locations } = body;
 
     // Update department fields
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (heading !== undefined) updateData.heading = heading;
     if (description !== undefined) updateData.description = description;
+    if (image !== undefined) updateData.image = image;
 
     console.log('Update data to apply:', updateData);
 
@@ -173,10 +179,12 @@ export const updateDepartment = async (event) => {
 };
 
 /**
- * PATCH /admin/departments/{id} - Update department content (achievements, treatments, facilities)
+ * PATCH /admin/departments/{id} - Update department content (Admin only - JWT protected)
  */
-export const updateDepartmentContent = async (event) => {
+const updateDepartmentContentHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} updating department content`);
+    
     const body = JSON.parse(event.body || '{}');
     const { id } = body;
 
@@ -216,10 +224,12 @@ export const updateDepartmentContent = async (event) => {
 };
 
 /**
- * DELETE /departments/{id} - Delete department
+ * DELETE /departments/{id} - Delete department (Admin only - JWT protected)
  */
-export const deleteDepartment = async (event) => {
+const deleteDepartmentHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} deleting department`);
+    
     const { id } = event.pathParameters;
 
     const department = await Department.findByPk(id);
@@ -234,3 +244,11 @@ export const deleteDepartment = async (event) => {
     return errorResponse('Failed to delete department', 500);
   }
 };
+
+// Export handlers
+module.exports.getDepartments = getDepartmentsHandler;
+module.exports.getDepartment = getDepartmentHandler;
+module.exports.createDepartment = protectedEndpoint(createDepartmentHandler);
+module.exports.updateDepartment = protectedEndpoint(updateDepartmentHandler);
+module.exports.updateDepartmentContent = protectedEndpoint(updateDepartmentContentHandler);
+module.exports.deleteDepartment = protectedEndpoint(deleteDepartmentHandler);

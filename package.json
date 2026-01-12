@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Serverless backend for Mediblues application",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "dev": "serverless offline --stage local",
     "deploy": "serverless deploy --stage prod",
@@ -24,6 +23,7 @@
   "license": "MIT",
   "dependencies": {
     "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.6.5",
     "sequelize": "^6.37.7",
     "xlsx": "^0.18.5"

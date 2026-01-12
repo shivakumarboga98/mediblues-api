@@ -1,10 +1,11 @@
-import { successResponse, errorResponse } from '../utils/response.js';
-import { Location, Doctor, Department } from '../models/index.js';
+const { successResponse, errorResponse } = require('../utils/response.js');
+const { Location, Doctor, Department } = require('../models/index.js');
+const { protectedEndpoint } = require('./adminAuth.js');
 
 /**
- * GET /locations - Get all locations with full details
+ * GET /locations - Get all locations with full details (Public read)
  */
-export const getLocations = async (event) => {
+const getLocationsHandler = async (event) => {
   try {
     const locations = await Location.findAll({
       attributes: ['id', 'name', 'address', 'phone', 'email', 'enabled', 'createdAt', 'updatedAt'],
@@ -12,20 +13,19 @@ export const getLocations = async (event) => {
         {
           model: Doctor,
           as: 'doctors',
-          attributes: ['id', 'name'],  // Keep this
+          attributes: ['id', 'name'],
           required: false
         },
         {
           model: Department,
           as: 'departments',
           attributes: ['id', 'name'],
-          through: { attributes: [] }, // This is correct for departments, since many-to-many
+          through: { attributes: [] },
           required: false
         }
       ],
       order: [['createdAt', 'DESC']]
     });
-
 
     return successResponse(locations);
   } catch (error) {
@@ -35,9 +35,9 @@ export const getLocations = async (event) => {
 };
 
 /**
- * GET /locations/list/simple - Get all locations with minimal data (optimized for dropdowns)
+ * GET /locations/list/simple - Get all locations with minimal data (Public read)
  */
-export const getLocationsSimple = async (event) => {
+const getLocationsSimpleHandler = async (event) => {
   try {
     const locations = await Location.findAll({
       attributes: ['id', 'name', 'address', 'phone', 'email'],
@@ -53,9 +53,9 @@ export const getLocationsSimple = async (event) => {
 };
 
 /**
- * GET /locations/{id} - Get single location with related data
+ * GET /locations/{id} - Get single location with related data (Public read)
  */
-export const getLocation = async (event) => {
+const getLocationHandler = async (event) => {
   try {
     const { id } = event.pathParameters;
 
@@ -90,10 +90,12 @@ export const getLocation = async (event) => {
 };
 
 /**
- * POST /locations - Create new location
+ * POST /locations - Create new location (Admin only - JWT protected)
  */
-export const createLocation = async (event) => {
+const createLocationHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} creating location`);
+    
     const body = JSON.parse(event.body || '{}');
     const { name, address, phone, email } = body;
 
@@ -124,10 +126,12 @@ export const createLocation = async (event) => {
 };
 
 /**
- * PUT /locations/{id} or POST /locations/update - Update location
+ * PUT /locations/{id} or POST /locations/update - Update location (Admin only - JWT protected)
  */
-export const updateLocation = async (event) => {
+const updateLocationHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} updating location`);
+    
     // Get ID from path parameter or request body
     let id = event.pathParameters?.id;
     let body = JSON.parse(event.body || '{}');
@@ -173,10 +177,12 @@ export const updateLocation = async (event) => {
 };
 
 /**
- * DELETE /locations/{id} - Delete location (cascades to all related doctors and their relationships)
+ * DELETE /locations/{id} - Delete location (Admin only - JWT protected)
  */
-export const deleteLocation = async (event) => {
+const deleteLocationHandler = async (event) => {
   try {
+    console.log(`✓ Admin ${event.admin?.email || 'unknown'} deleting location`);
+    
     const { id } = event.pathParameters;
 
     const location = await Location.findByPk(id);
@@ -184,11 +190,6 @@ export const deleteLocation = async (event) => {
       return errorResponse('Location not found', 404);
     }
 
-    // Delete will cascade to:
-    // - doctors assigned to this location
-    // - doctor_departments (via cascade delete of doctors)
-    // - doctor_specializations (via cascade delete of doctors)
-    // - department_locations entries
     await location.destroy();
     return successResponse({ message: 'Location and all related doctors/relationships deleted successfully' });
   } catch (error) {
@@ -196,3 +197,11 @@ export const deleteLocation = async (event) => {
     return errorResponse('Failed to delete location', 500);
   }
 };
+
+// Export handlers
+module.exports.getLocations = getLocationsHandler;
+module.exports.getLocationsSimple = getLocationsSimpleHandler;
+module.exports.getLocation = getLocationHandler;
+module.exports.createLocation = protectedEndpoint(createLocationHandler);
+module.exports.updateLocation = protectedEndpoint(updateLocationHandler);
+module.exports.deleteLocation = protectedEndpoint(deleteLocationHandler);

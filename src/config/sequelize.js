@@ -1,10 +1,10 @@
-import { Sequelize } from 'sequelize';
-import dotenv from 'dotenv';
+const { Sequelize } = require('sequelize');
+const dotenv = require('dotenv');
 
 dotenv.config({ path: '.env.local' });
 
 // Initialize Sequelize with Lambda-optimized settings
-export const sequelize = new Sequelize(
+const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
   process.env.DB_PASSWORD,
@@ -31,3 +31,5 @@ export const sequelize = new Sequelize(
 
 // DO NOT call authenticate() here - it blocks Lambda initialization
 // Connection will be established lazily on first query
+
+module.exports = { sequelize };
