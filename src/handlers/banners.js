@@ -8,7 +8,7 @@ const { protectedEndpoint } = require('./adminAuth.js');
 const getBannersHandler = async (event) => {
   try {
     const banners = await Banner.findAll({
-      attributes: ['id', 'title', 'description', 'image', 'link', 'createdAt'],
+      attributes: ['id', 'title', 'description', 'image', 'link', 'isActive', 'isHero', 'createdAt', 'updatedAt'],
       order: [['createdAt', 'DESC']]
     });
     return successResponse(banners);
