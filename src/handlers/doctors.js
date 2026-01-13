@@ -153,6 +153,160 @@ const getDoctorHandler = async (event) => {
 };
 
 /**
+ * GET /doctors/search - Search doctors by name, specialization, department, or location
+ * Query parameters: q (search query), department (department ID), location (location ID)
+ */
+const searchDoctorsHandler = async (event) => {
+  try {
+    const query = event.queryStringParameters?.q || '';
+    const departmentId = event.queryStringParameters?.department;
+    const locationId = event.queryStringParameters?.location;
+
+    // Build where clause for search
+    const { Op } = require('sequelize');
+    const whereClause = {};
+
+    // Search by doctor name (using Op.like for MySQL compatibility)
+    if (query) {
+      whereClause.name = { [Op.like]: `%${query}%` };
+    }
+
+    // Filter by location
+    if (locationId) {
+      whereClause.location_id = locationId;
+    }
+
+    const queryOptions = {
+      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'availability', 'location_id', 'createdAt', 'updatedAt'],
+      include: [
+        {
+          model: Location,
+          as: 'location',
+          attributes: ['id', 'name', 'address', 'phone', 'email']
+        },
+        {
+          model: Department,
+          as: 'departments',
+          attributes: ['id', 'name'],
+          through: { attributes: [] },
+          required: false
+        },
+        {
+          model: DoctorSpecialization,
+          as: 'specializations',
+          attributes: ['specialization'],
+          required: false,
+          raw: false
+        }
+      ],
+      where: whereClause,
+      order: [['id', 'DESC']],
+      subQuery: false,
+      raw: false,
+      distinct: true
+    };
+
+    // Add department filter if provided - this requires the department relation
+    if (departmentId) {
+      queryOptions.include[1] = {
+        model: Department,
+        as: 'departments',
+        attributes: ['id', 'name'],
+        where: { id: departmentId },
+        through: { attributes: [] },
+        required: true
+      };
+    }
+
+    // Search in specializations if query provided
+    if (query) {
+      queryOptions.include[2] = {
+        model: DoctorSpecialization,
+        as: 'specializations',
+        attributes: ['specialization'],
+        where: { specialization: { [Op.like]: `%${query}%` } },
+        required: false,
+        raw: false
+      };
+    }
+
+    let doctors = await Doctor.findAll(queryOptions);
+
+    // If query provided, filter by specialization match as well (to handle OR condition)
+    if (query) {
+      // First, find doctors by name (already done via where clause)
+      // Now also find doctors by specialization
+      const docsBySpecialization = await Doctor.findAll({
+        attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'availability', 'location_id', 'createdAt', 'updatedAt'],
+        include: [
+          {
+            model: Location,
+            as: 'location',
+            attributes: ['id', 'name', 'address', 'phone', 'email']
+          },
+          {
+            model: Department,
+            as: 'departments',
+            attributes: ['id', 'name'],
+            through: { attributes: [] },
+            required: departmentId ? true : false,
+            where: departmentId ? { id: departmentId } : undefined
+          },
+          {
+            model: DoctorSpecialization,
+            as: 'specializations',
+            attributes: ['specialization'],
+            where: { specialization: { [Op.like]: `%${query}%` } },
+            required: true,
+            raw: false
+          }
+        ],
+        where: locationId ? { location_id: locationId } : {},
+        order: [['id', 'DESC']],
+        subQuery: false,
+        raw: false,
+        distinct: true
+      });
+
+      // Combine results and remove duplicates
+      const doctorMap = new Map();
+      [...doctors, ...docsBySpecialization].forEach(doc => {
+        const docId = doc.id;
+        if (!doctorMap.has(docId)) {
+          doctorMap.set(docId, doc);
+        }
+      });
+      doctors = Array.from(doctorMap.values());
+    }
+
+    const formattedDoctors = doctors.map(doc => {
+      const docData = doc.toJSON ? doc.toJSON() : doc;
+      return {
+        id: docData.id,
+        name: docData.name,
+        qualifications: Array.isArray(docData.qualifications) ? docData.qualifications : (docData.qualifications ? JSON.parse(docData.qualifications) : []),
+        experience: docData.experience,
+        image: docData.image,
+        availability: docData.availability,
+        createdAt: docData.createdAt,
+        updatedAt: docData.updatedAt,
+        location_id: docData.location_id,
+        location: docData.location || null,
+        departments: Array.isArray(docData.departments) ? docData.departments : [],
+        specializations: Array.isArray(docData.specializations) 
+          ? docData.specializations.map(s => s.specialization || s)
+          : []
+      };
+    });
+
+    return successResponse(formattedDoctors);
+  } catch (error) {
+    console.error('Error searching doctors:', error);
+    return errorResponse('Failed to search doctors', 500, { message: error.message });
+  }
+};
+
+/**
  * POST /doctors - Create new doctor (Admin only - JWT protected)
  */
 const createDoctorHandler = async (event) => {
@@ -357,6 +511,7 @@ const deleteDoctorHandler = async (event) => {
 // Export handlers
 module.exports.getDoctors = getDoctorsHandler;
 module.exports.getDoctor = getDoctorHandler;
+module.exports.searchDoctors = searchDoctorsHandler;
 module.exports.createDoctor = protectedEndpoint(createDoctorHandler);
 module.exports.updateDoctor = protectedEndpoint(updateDoctorHandler);
 module.exports.deleteDoctor = protectedEndpoint(deleteDoctorHandler);

@@ -20,20 +20,20 @@ provider:
   environment:
     STAGE: ${self:provider.stage}
     NODE_ENV: ${env:NODE_ENV, 'development'}
-    FRONTEND_URL: ${env:FRONTEND_URL}
-    S3_BUCKET_NAME: ${env:S3_BUCKET_NAME}
-    CLOUDFRONT_DOMAIN: ${env:CLOUDFRONT_DOMAIN}
-    DB_HOST: ${env:DB_HOST}
+    FRONTEND_URL: ${env:FRONTEND_URL, 'http://localhost:5173'}
+    S3_BUCKET_NAME: ${env:S3_BUCKET_NAME, 'mediblues-dev-bucket'}
+    CLOUDFRONT_DOMAIN: ${env:CLOUDFRONT_DOMAIN, ''}
+    DB_HOST: ${env:DB_HOST, 'localhost'}
     DB_PORT: ${env:DB_PORT, '3306'}
-    DB_NAME: ${env:DB_NAME}
-    DB_USER: ${env:DB_USER}
-    DB_PASSWORD: ${env:DB_PASSWORD}
+    DB_NAME: ${env:DB_NAME, 'mediblues'}
+    DB_USER: ${env:DB_USER, 'root'}
+    DB_PASSWORD: ${env:DB_PASSWORD, 'password'}
     DB_POOL_MIN: ${env:DB_POOL_MIN, '1'}
     DB_POOL_MAX: ${env:DB_POOL_MAX, '2'}
     DB_WAIT_FOR_CONNECTIONS: ${env:DB_WAIT_FOR_CONNECTIONS, 'true'}
     DB_CONNECTION_LIMIT: ${env:DB_CONNECTION_LIMIT, '2'}
     DB_QUEUE_LIMIT: ${env:DB_QUEUE_LIMIT, '0'}
-    JWT_SECRET: ${env:JWT_SECRET}
+    JWT_SECRET: ${env:JWT_SECRET, 'your-secret-key-change-in-production'}
     ADMIN_EMAIL: ${env:ADMIN_EMAIL, 'admin@mediblues.com'}
     ADMIN_PASSWORD: ${env:ADMIN_PASSWORD, 'Admin@123'}
   
@@ -48,8 +48,8 @@ provider:
             - s3:DeleteObject
             - s3:ListBucket
           Resource:
-            - "arn:aws:s3:::${env:S3_BUCKET_NAME}"
-            - "arn:aws:s3:::${env:S3_BUCKET_NAME}/*"
+            - "arn:aws:s3:::${env:S3_BUCKET_NAME, 'mediblues-dev-bucket'}"
+            - "arn:aws:s3:::${env:S3_BUCKET_NAME, 'mediblues-dev-bucket'}/*"
         - Effect: Allow
           Action:
             - logs:CreateLogGroup
@@ -71,7 +71,7 @@ provider:
       allowedOrigins:
         - http://localhost:5173
         - http://localhost:5174
-        - ${env:FRONTEND_URL}
+        - ${env:FRONTEND_URL, 'http://localhost:5173'}
       allowedHeaders:
         - Content-Type
         - Authorization
@@ -272,6 +272,15 @@ functions:
     events:
       - httpApi:
           path: /doctors/{id}
+          method: GET
+
+  searchDoctors:
+    handler: src/handlers/doctors.searchDoctors
+    description: Search doctors by name, specialization, department, or location
+    vpc: ${self:custom.vpcConfig}
+    events:
+      - httpApi:
+          path: /doctors/search
           method: GET
 
   createDoctor:
@@ -506,7 +515,8 @@ custom:
       - subnet-0c7f766c39c9b3d78
     
   dotenv:
-    path: .env.production
+    # Load from .env first (for local dev), then .env.production (for prod deployment)
+    # The plugin will automatically look for .env files based on stage
     basePath: ./
     exclude:
       - AWS_REGION
