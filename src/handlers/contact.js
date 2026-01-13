@@ -1,10 +1,10 @@
-import { successResponse, errorResponse } from '../utils/response.js';
-import { ContactInfo } from '../models/index.js';
+const { successResponse, errorResponse } = require('../utils/response.js');
+const { ContactInfo } = require('../models/index.js');
 
 /**
  * GET /contact-info - Get all active contact information
  */
-export const getContact = async (event) => {
+const getContact = async (event) => {
   try {
     const results = await ContactInfo.findAll({
       where: { isActive: true },
@@ -25,7 +25,7 @@ export const getContact = async (event) => {
 /**
  * GET /contact-info/all - Get all contact entries (admin)
  */
-export const getAllContacts = async (event) => {
+const getAllContacts = async (event) => {
   try {
     const results = await ContactInfo.findAll({
       order: [['createdAt', 'DESC']]
@@ -40,7 +40,7 @@ export const getAllContacts = async (event) => {
 /**
  * POST /contact-info - Create new contact entry
  */
-export const createContact = async (event) => {
+const createContact = async (event) => {
   try {
     const body = JSON.parse(event.body || '{}');
     const { contact_type, contact_value, description, isActive } = body;
@@ -92,7 +92,7 @@ export const createContact = async (event) => {
 /**
  * PUT /contact-info/{id} - Update specific contact entry
  */
-export const updateContact = async (event) => {
+const updateContact = async (event) => {
   try {
     // Get ID from path parameter or request body
     let id = event.pathParameters?.id;
@@ -163,7 +163,7 @@ export const updateContact = async (event) => {
 /**
  * DELETE /contact-info/{id} - Delete contact entry
  */
-export const deleteContact = async (event) => {
+const deleteContact = async (event) => {
   try {
     const { id } = event.pathParameters;
 
@@ -185,7 +185,7 @@ export const deleteContact = async (event) => {
  * Accepts contact form submissions
  * Expected body: { name, email, message }
  */
-export const handler = async (event) => {
+const handler = async (event) => {
   try {
     // Parse request body
     const body = JSON.parse(event.body || '{}');
@@ -231,3 +231,10 @@ export const handler = async (event) => {
     return errorResponse('Failed to process contact form', 500);
   }
 };
+
+module.exports.getContact = getContact;
+module.exports.getAllContacts = getAllContacts;
+module.exports.createContact = createContact;
+module.exports.updateContact = updateContact;
+module.exports.deleteContact = deleteContact;
+module.exports.handler = handler;

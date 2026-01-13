@@ -1,4 +1,4 @@
-import { successResponse, errorResponse } from '../utils/response.js';
+const { successResponse, errorResponse } = require('../utils/response.js');
 
 /**
  * Health check handler
@@ -6,7 +6,7 @@ import { successResponse, errorResponse } from '../utils/response.js';
  * 
  * Returns the health status of the API
  */
-export const handler = async (event) => {
+const handler = async (event) => {
   try {
     const healthData = {
       status: 'ok',
@@ -21,3 +21,5 @@ export const handler = async (event) => {
     return errorResponse('Health check failed', 500);
   }
 };
+
+module.exports.handler = handler;

@@ -14,17 +14,17 @@ const sequelize = new Sequelize(
     dialect: 'mysql',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     pool: {
-      max: 2,        // Reduced for Lambda
+      max: 1,        // Single connection for Lambda
       min: 0,        // Start with no connections
-      acquire: 10000, // Reduced from 30s to 10s
-      idle: 1000     // Reduced from 10s to 1s
+      acquire: 5000, // 5 second timeout for acquiring connection
+      idle: 500      // Immediately close idle connections
     },
     define: {
       timestamps: true,
       underscored: false
     },
     dialectOptions: {
-      connectTimeout: 5000 // 5 second connection timeout
+      connectTimeout: 3000 // 3 second connection timeout
     }
   }
 );

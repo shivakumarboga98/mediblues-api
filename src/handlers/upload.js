@@ -1,5 +1,5 @@
-import { uploadToS3 } from '../utils/s3.js';
-import { successResponse, errorResponse } from '../utils/response.js';
+const { uploadToS3 } = require('../utils/s3.js');
+const { successResponse, errorResponse } = require('../utils/response.js');
 
 /**
  * Upload image to S3 and return the URL
@@ -7,8 +7,15 @@ import { successResponse, errorResponse } from '../utils/response.js';
  * - file: image file
  * - folder: folder name (banners, doctors, departments)
  */
-export const uploadImage = async (event) => {
+const uploadImage = async (event) => {
   try {
+    console.log('Upload request received:', {
+      folder: event.queryStringParameters?.folder,
+      filename: event.queryStringParameters?.filename,
+      hasBody: !!event.body,
+      isBase64Encoded: event.isBase64Encoded
+    });
+
     // Get request body - it's base64 encoded string
     let body = event.body;
 
@@ -53,6 +60,12 @@ export const uploadImage = async (event) => {
     // Upload to S3
     const s3Url = await uploadToS3(binaryBody, filename, folder);
 
+    console.log('Image uploaded successfully:', {
+      url: s3Url,
+      filename: filename,
+      folder: folder
+    });
+
     return successResponse({
       success: true,
       message: 'Image uploaded successfully',
@@ -63,7 +76,11 @@ export const uploadImage = async (event) => {
       }
     }, 200);
   } catch (error) {
-    console.error('Error uploading image:', error);
+    console.error('Error uploading image:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code
+    });
     const response = errorResponse(error.message, 500);
     // Add CORS headers
     response.headers = {
@@ -75,3 +92,5 @@ export const uploadImage = async (event) => {
     return response;
   }
 };
+
+module.exports.uploadImage = uploadImage;

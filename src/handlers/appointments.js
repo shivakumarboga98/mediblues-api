@@ -1,7 +1,7 @@
-import { Appointment, Location, Department, Doctor, Package } from '../models/index.js';
-import { successResponse, errorResponse } from '../utils/response.js';
+const { Appointment, Location, Department, Doctor, Package } = require('../models/index.js');
+const { successResponse, errorResponse } = require('../utils/response.js');
 
-export const createAppointment = async (event) => {
+const createAppointment = async (event) => {
   try {
     const body = JSON.parse(event.body);
 
@@ -122,7 +122,7 @@ export const createAppointment = async (event) => {
   }
 };
 
-export const getAppointments = async (event) => {
+const getAppointments = async (event) => {
   try {
     // Get pagination and filter params from request body
     const body = JSON.parse(event.body || '{}');
@@ -189,7 +189,7 @@ export const getAppointments = async (event) => {
   }
 };
 
-export const getAppointmentById = async (event) => {
+const getAppointmentById = async (event) => {
   try {
     const { id } = event.pathParameters;
 
@@ -216,7 +216,7 @@ export const getAppointmentById = async (event) => {
   }
 };
 
-export const updateAppointment = async (event) => {
+const updateAppointment = async (event) => {
   try {
     const { id } = event.pathParameters;
     const body = JSON.parse(event.body);
@@ -263,7 +263,7 @@ export const updateAppointment = async (event) => {
   }
 };
 
-export const deleteAppointment = async (event) => {
+const deleteAppointment = async (event) => {
   try {
     const { id } = event.pathParameters;
 
@@ -283,3 +283,9 @@ export const deleteAppointment = async (event) => {
     return errorResponse(error.message, 500);
   }
 };
+
+module.exports.createAppointment = createAppointment;
+module.exports.getAppointments = getAppointments;
+module.exports.getAppointmentById = getAppointmentById;
+module.exports.updateAppointment = updateAppointment;
+module.exports.deleteAppointment = deleteAppointment;

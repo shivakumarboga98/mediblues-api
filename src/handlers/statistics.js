@@ -1,9 +1,9 @@
-import { Appointment, Location, Department, Doctor, Package } from '../models/index.js';
-import { successResponse, errorResponse } from '../utils/response.js';
-import { Op, fn, col } from 'sequelize';
-import { sequelize } from '../config/sequelize.js';
+const { Appointment, Location, Department, Doctor, Package } = require('../models/index.js');
+const { successResponse, errorResponse } = require('../utils/response.js');
+const { Op, fn, col } = require('sequelize');
+const { sequelize } = require('../config/sequelize.js');
 
-export const getDashboardStatistics = async (event) => {
+const getDashboardStatistics = async (event) => {
   const timeoutMs = 8000; // 8 second timeout
   let timeoutHandle;
 
@@ -108,3 +108,5 @@ export const getDashboardStatistics = async (event) => {
     return errorResponse(error.message || 'Failed to fetch statistics', 500);
   }
 };
+
+module.exports.getDashboardStatistics = getDashboardStatistics;

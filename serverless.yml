@@ -1,6 +1,8 @@
 service: mediblues-api
 
-frameworkVersion: '3'
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-offline
 
 provider:
   name: aws
@@ -8,19 +10,29 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: eu-north-1
   memorySize: 512
-  timeout: 29
+  timeout: 30
+  
+  # VPC Configuration for RDS access - ONLY for database-dependent functions
+  # This is intentionally empty - VPC will be configured per-function that needs RDS
+  # See individual function definitions for VPC configuration
   
   # Environment variables available to all functions
   environment:
     STAGE: ${self:provider.stage}
     NODE_ENV: ${env:NODE_ENV, 'development'}
-    S3_BUCKET_NAME: ${env:S3_BUCKET_NAME, 'mediblues-assets'}
-    CLOUDFRONT_DOMAIN: ${env:CLOUDFRONT_DOMAIN, ''}
+    FRONTEND_URL: ${env:FRONTEND_URL}
+    S3_BUCKET_NAME: ${env:S3_BUCKET_NAME}
+    CLOUDFRONT_DOMAIN: ${env:CLOUDFRONT_DOMAIN}
     DB_HOST: ${env:DB_HOST}
     DB_PORT: ${env:DB_PORT, '3306'}
     DB_NAME: ${env:DB_NAME}
     DB_USER: ${env:DB_USER}
     DB_PASSWORD: ${env:DB_PASSWORD}
+    DB_POOL_MIN: ${env:DB_POOL_MIN, '1'}
+    DB_POOL_MAX: ${env:DB_POOL_MAX, '2'}
+    DB_WAIT_FOR_CONNECTIONS: ${env:DB_WAIT_FOR_CONNECTIONS, 'true'}
+    DB_CONNECTION_LIMIT: ${env:DB_CONNECTION_LIMIT, '2'}
+    DB_QUEUE_LIMIT: ${env:DB_QUEUE_LIMIT, '0'}
     JWT_SECRET: ${env:JWT_SECRET}
     ADMIN_EMAIL: ${env:ADMIN_EMAIL, 'admin@mediblues.com'}
     ADMIN_PASSWORD: ${env:ADMIN_PASSWORD, 'Admin@123'}
@@ -36,14 +48,22 @@ provider:
             - s3:DeleteObject
             - s3:ListBucket
           Resource:
-            - "arn:aws:s3:::${env:S3_BUCKET_NAME, 'mediblues-assets'}"
-            - "arn:aws:s3:::${env:S3_BUCKET_NAME, 'mediblues-assets'}/*"
+            - "arn:aws:s3:::${env:S3_BUCKET_NAME}"
+            - "arn:aws:s3:::${env:S3_BUCKET_NAME}/*"
         - Effect: Allow
           Action:
             - logs:CreateLogGroup
             - logs:CreateLogStream
             - logs:PutLogEvents
           Resource: "arn:aws:logs:*:*:*"
+        - Effect: Allow
+          Action:
+            - ec2:CreateNetworkInterface
+            - ec2:DescribeNetworkInterfaces
+            - ec2:DeleteNetworkInterface
+            - ec2:AssignPrivateIpAddresses
+            - ec2:UnassignPrivateIpAddresses
+          Resource: "*"
   
   # HTTP API Configuration (faster & cheaper than REST API)
   httpApi:
@@ -51,7 +71,7 @@ provider:
       allowedOrigins:
         - http://localhost:5173
         - http://localhost:5174
-        - ${env:FRONTEND_URL, 'https://your-amplify-domain.amplifyapp.com'}
+        - ${env:FRONTEND_URL}
       allowedHeaders:
         - Content-Type
         - Authorization
@@ -95,6 +115,8 @@ functions:
   getDashboardStatistics:
     handler: src/handlers/statistics.getDashboardStatistics
     description: Get dashboard statistics (counts and aggregations)
+    timeout: 30
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /statistics
@@ -103,6 +125,7 @@ functions:
   uploadImage:
     handler: src/handlers/upload.uploadImage
     description: Upload image to S3 bucket
+    timeout: 30
     events:
       - httpApi:
           path: /upload
@@ -120,6 +143,7 @@ functions:
   getLocations:
     handler: src/handlers/locations.getLocations
     description: Get all locations
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /locations
@@ -128,6 +152,7 @@ functions:
   getLocationsSimple:
     handler: src/handlers/locations.getLocationsSimple
     description: Get all locations with minimal data (optimized for dropdowns)
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /locations/list/simple
@@ -136,6 +161,7 @@ functions:
   getLocation:
     handler: src/handlers/locations.getLocation
     description: Get single location
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /locations/{id}
@@ -144,6 +170,7 @@ functions:
   createLocation:
     handler: src/handlers/locations.createLocation
     description: Create new location
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /locations
@@ -152,6 +179,7 @@ functions:
   updateLocation:
     handler: src/handlers/locations.updateLocation
     description: Update location
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /locations/{id}
@@ -163,6 +191,7 @@ functions:
   deleteLocation:
     handler: src/handlers/locations.deleteLocation
     description: Delete location
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /locations/{id}
@@ -172,6 +201,7 @@ functions:
   getDepartments:
     handler: src/handlers/departments.getDepartments
     description: Get all departments
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /departments
@@ -180,6 +210,7 @@ functions:
   getDepartment:
     handler: src/handlers/departments.getDepartment
     description: Get single department
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /departments/{id}
@@ -188,6 +219,7 @@ functions:
   createDepartment:
     handler: src/handlers/departments.createDepartment
     description: Create new department
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /departments
@@ -196,6 +228,7 @@ functions:
   updateDepartment:
     handler: src/handlers/departments.updateDepartment
     description: Update department
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /departments/{id}
@@ -207,6 +240,7 @@ functions:
   updateDepartmentContent:
     handler: src/handlers/departments.updateDepartmentContent
     description: Update department content (achievements, treatments, facilities)
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /departments/update-content
@@ -215,6 +249,7 @@ functions:
   deleteDepartment:
     handler: src/handlers/departments.deleteDepartment
     description: Delete department
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /departments/{id}
@@ -224,6 +259,7 @@ functions:
   getDoctors:
     handler: src/handlers/doctors.getDoctors
     description: Get all doctors
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /doctors
@@ -232,6 +268,7 @@ functions:
   getDoctor:
     handler: src/handlers/doctors.getDoctor
     description: Get single doctor
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /doctors/{id}
@@ -240,6 +277,7 @@ functions:
   createDoctor:
     handler: src/handlers/doctors.createDoctor
     description: Create new doctor
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /doctors
@@ -248,6 +286,7 @@ functions:
   updateDoctor:
     handler: src/handlers/doctors.updateDoctor
     description: Update doctor
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /doctors/{id}
@@ -259,6 +298,7 @@ functions:
   deleteDoctor:
     handler: src/handlers/doctors.deleteDoctor
     description: Delete doctor
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /doctors/{id}
@@ -268,6 +308,7 @@ functions:
   getBanners:
     handler: src/handlers/banners.getBanners
     description: Get all banners
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /banners
@@ -276,6 +317,7 @@ functions:
   getBanner:
     handler: src/handlers/banners.getBanner
     description: Get single banner
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /banners/{id}
@@ -284,6 +326,7 @@ functions:
   createBanner:
     handler: src/handlers/banners.createBanner
     description: Create new banner
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /banners
@@ -292,6 +335,7 @@ functions:
   updateBanner:
     handler: src/handlers/banners.updateBanner
     description: Update banner
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /banners/{id}
@@ -303,6 +347,7 @@ functions:
   deleteBanner:
     handler: src/handlers/banners.deleteBanner
     description: Delete banner
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /banners/{id}
@@ -356,6 +401,7 @@ functions:
   createAppointment:
     handler: src/handlers/appointments.createAppointment
     description: Create new appointment
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /appointments
@@ -364,6 +410,7 @@ functions:
   getAppointments:
     handler: src/handlers/appointments.getAppointments
     description: Get all appointments with filters and pagination
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /appointments/list
@@ -372,6 +419,7 @@ functions:
   getAppointmentById:
     handler: src/handlers/appointments.getAppointmentById
     description: Get single appointment
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /appointments/{id}
@@ -380,6 +428,7 @@ functions:
   updateAppointment:
     handler: src/handlers/appointments.updateAppointment
     description: Update appointment
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /appointments/{id}
@@ -388,6 +437,7 @@ functions:
   deleteAppointment:
     handler: src/handlers/appointments.deleteAppointment
     description: Delete appointment
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /appointments/{id}
@@ -397,6 +447,7 @@ functions:
   getAllPackages:
     handler: src/handlers/packages.getAllPackages
     description: Get all health check packages
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /packages
@@ -405,6 +456,7 @@ functions:
   getPackageById:
     handler: src/handlers/packages.getPackageById
     description: Get single package
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /packages/get
@@ -413,6 +465,7 @@ functions:
   createPackage:
     handler: src/handlers/packages.createPackage
     description: Create new package
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /packages
@@ -421,6 +474,7 @@ functions:
   updatePackage:
     handler: src/handlers/packages.updatePackage
     description: Update package
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /packages/update
@@ -429,14 +483,11 @@ functions:
   deletePackage:
     handler: src/handlers/packages.deletePackage
     description: Delete package
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /packages/delete
           method: POST
-
-plugins:
-  - serverless-dotenv-plugin
-  - serverless-offline
 
 # Custom configuration
 custom:
@@ -444,22 +495,31 @@ custom:
     httpPort: 3000
     host: 0.0.0.0
     noPrependStageInUrl: true
+  
+  # VPC configuration - reusable across functions that need DB access
+  vpcConfig:
+    securityGroupIds:
+      - sg-01720bc042b04757f
+    subnetIds:
+      - subnet-03875321c65c86b8e
+      - subnet-019e419aac3fe4e9b
+      - subnet-0c7f766c39c9b3d78
     
   dotenv:
-    path: .env.${self:provider.stage}
+    path: .env.production
     basePath: ./
-    include:
-      - NODE_ENV
-      - FRONTEND_URL
+    exclude:
+      - AWS_REGION
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
 
 # Package optimization
 package:
-  individually: true
+  individually: false
   patterns:
-    - '!node_modules/**'
     - '!.git/**'
     - '!.env*'
     - '!README.md'
     - '!.gitignore'
-    - 'src/**'
-    - 'package.json'
+    - '!scripts/**'
+    - '!node_modules/aws-sdk/**'

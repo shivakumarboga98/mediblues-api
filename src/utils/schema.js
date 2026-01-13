@@ -1,4 +1,4 @@
-import { query } from './database.js';
+const { query } = require('./database.js');
 
 /**
  * Initialize database tables with proper relational design
