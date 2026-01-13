@@ -35,7 +35,7 @@ const getDoctorsHandler = async (event) => {
           raw: false
         }
       ],
-      order: [['id', 'DESC']],
+      order: [['experience', 'DESC']],
       subQuery: false,
       raw: false
     };
