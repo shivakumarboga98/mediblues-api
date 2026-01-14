@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "description": "Serverless backend for Mediblues application",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "dev": "serverless offline --stage local",
-    "deploy": "serverless deploy --stage prod",
-    "deploy:dev": "serverless deploy --stage dev",
+    "deploy": "node ./node_modules/serverless/bin/serverless.js deploy --stage prod",
+    "deploy:dev": "node ./node_modules/serverless/bin/serverless.js deploy --stage dev",
     "remove": "serverless remove",
     "logs": "serverless logs -f",
-    "test": "node --test"
+    "test": "node --test",
+    "init-db": "node scripts/init-db.js",
+    "seed-departments": "node scripts/seed-departments.js"
   },
   "keywords": [
     "serverless",
@@ -21,11 +22,17 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.6.5",
+    "sequelize": "^6.37.7",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "serverless": "^3.38.0",
+    "esbuild": "^0.27.2",
+    "serverless": "^3.40.0",
     "serverless-dotenv-plugin": "^6.0.0",
+    "serverless-esbuild": "^1.57.0",
     "serverless-offline": "^13.3.3"
   },
   "engines": {
