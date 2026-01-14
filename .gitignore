@@ -14,6 +14,9 @@ yarn.lock
 .env.dev
 .env.prod
 
+images
+scripts
+
 # Logs
 *.log
 logs/
