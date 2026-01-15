@@ -207,14 +207,23 @@ functions:
           path: /departments
           method: GET
 
+  getAdminDepartments:
+    handler: src/handlers/departments.getAdminDepartments
+    description: Get all departments including soft-deleted (Admin only)
+    vpc: ${self:custom.vpcConfig}
+    events:
+      - httpApi:
+          path: /admin/departments
+          method: GET
+
   getDepartment:
     handler: src/handlers/departments.getDepartment
     description: Get single department
     vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
-          path: /departments/{id}
-          method: GET
+          path: /departments/detail
+          method: POST
 
   createDepartment:
     handler: src/handlers/departments.createDepartment
@@ -231,9 +240,6 @@ functions:
     vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
-          path: /departments/{id}
-          method: PUT
-      - httpApi:
           path: /departments/update
           method: PUT
 
@@ -245,15 +251,6 @@ functions:
       - httpApi:
           path: /departments/update-content
           method: PUT
-
-  deleteDepartment:
-    handler: src/handlers/departments.deleteDepartment
-    description: Delete department
-    vpc: ${self:custom.vpcConfig}
-    events:
-      - httpApi:
-          path: /departments/{id}
-          method: DELETE
 
   # Doctors endpoints
   getDoctors:

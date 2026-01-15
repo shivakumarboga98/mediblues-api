@@ -41,7 +41,7 @@ const getDashboardStatistics = async (event) => {
             raw: true
           }),
           Location.count(),
-          Department.count(),
+          Department.count({ where: { isActive: true } }),
           Doctor.count(),
           Package.count()
         ]);

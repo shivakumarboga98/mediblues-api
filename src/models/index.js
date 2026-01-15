@@ -78,6 +78,28 @@ const Department = sequelize.define('Department', {
     type: DataTypes.JSON,
     allowNull: true,
     defaultValue: []
+  },
+  expertise: {
+    type: DataTypes.TEXT('long'),
+    allowNull: true,
+    comment: 'Detailed description of department expertise'
+  },
+  whyChoose: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [],
+    comment: 'JSON array of {title, description} objects - reasons to choose this department'
+  },
+  faqs: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [],
+    comment: 'JSON array of {question, answer} objects - frequently asked questions'
+  },
+  isActive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    comment: 'Soft delete flag - false means department is deleted'
   }
 
 }, {
