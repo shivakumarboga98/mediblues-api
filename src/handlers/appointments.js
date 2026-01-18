@@ -88,9 +88,13 @@ const createAppointment = async (event) => {
     
     // For package bookings (type 2)
     else {
-      const { packageId } = body;
+      const { packageId, location } = body;
       if (!packageId) {
         return errorResponse('Missing packageId for package booking', 400);
+      }
+
+      if (!location) {
+        return errorResponse('Missing required field: location', 400);
       }
 
       // Validate package exists
@@ -99,14 +103,13 @@ const createAppointment = async (event) => {
         return errorResponse('Invalid package', 400);
       }
 
-      // Get location ID if location is provided
-      let locationId = null;
-      if (body.location) {
-        const locationRecord = await Location.findOne({ where: { name: body.location } });
-        if (locationRecord) {
-          locationId = locationRecord.id;
-        }
+      // Get location ID from location name
+      const locationRecord = await Location.findOne({ where: { name: location } });
+      if (!locationRecord) {
+        return errorResponse('Invalid location', 400);
       }
+      
+      let locationId = locationRecord.id;
 
       // Create package booking
       const appointmentId = generateAppointmentId();
