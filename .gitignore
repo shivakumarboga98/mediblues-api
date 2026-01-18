@@ -15,6 +15,7 @@ yarn.lock
 .env.dev
 .env.prod
 
+*.md
 images
 scripts
 
