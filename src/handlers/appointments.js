@@ -1,6 +1,20 @@
 const { Appointment, Location, Department, Doctor, Package } = require('../models/index.js');
 const { successResponse, errorResponse } = require('../utils/response.js');
 
+// Generate appointment ID in format YYYYMMDDHHMMSSms (with 2-digit milliseconds)
+const generateAppointmentId = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const date = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const milliseconds = String(Math.floor(now.getMilliseconds() / 10)).padStart(2, '0');
+  
+  return `${year}${month}${date}${hours}${minutes}${seconds}${milliseconds}`;
+};
+
 const createAppointment = async (event) => {
   try {
     const body = JSON.parse(event.body);
@@ -46,6 +60,7 @@ const createAppointment = async (event) => {
       }
 
       // Create normal appointment
+      const appointmentId = generateAppointmentId();
       const appointment = await Appointment.create({
         fullName: body.fullName,
         mobileNumber: body.mobileNumber,
@@ -59,7 +74,8 @@ const createAppointment = async (event) => {
         preferredTime: body.preferredTime || null,
         status: 'pending',
         package_id: null,
-        type: 1
+        type: 1,
+        appointmentId: appointmentId
       });
 
       console.log('Normal appointment created:', appointment);
@@ -93,6 +109,7 @@ const createAppointment = async (event) => {
       }
 
       // Create package booking
+      const appointmentId = generateAppointmentId();
       const appointment = await Appointment.create({
         fullName: body.fullName,
         mobileNumber: body.mobileNumber,
@@ -106,7 +123,8 @@ const createAppointment = async (event) => {
         preferredTime: body.preferredTime || null,
         status: 'pending',
         package_id: packageId,
-        type: 2
+        type: 2,
+        appointmentId: appointmentId
       });
 
       console.log('Package booking created:', appointment);

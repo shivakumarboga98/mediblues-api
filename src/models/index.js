@@ -351,6 +351,12 @@ const Appointment = sequelize.define('Appointment', {
     allowNull: false,
     defaultValue: 1,
     comment: '1 = normal appointment, 2 = package booking'
+  },
+  appointmentId: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    unique: true,
+    comment: 'Generated appointment ID in format YYYYMMDDHHMMSS'
   }
 }, {
   tableName: 'appointments',
