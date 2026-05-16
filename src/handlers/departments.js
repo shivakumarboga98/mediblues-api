@@ -7,18 +7,23 @@ const { protectedEndpoint } = require('./adminAuth.js');
  */
 const getDepartmentsHandler = async (event) => {
   try {
+    const isSummary = event.queryStringParameters?.summary === '1' || event.queryStringParameters?.summary === 'true';
     const departments = await Department.findAll({
-      attributes: ['id', 'name', 'heading', 'description', 'image', 'overview', 'achievements', 'legacy', 'treatments', 'facilities', 'expertise', 'whyChoose', 'faqs', 'isActive', 'createdAt', 'updatedAt'],
+      attributes: isSummary
+        ? ['id', 'name', 'heading', 'image']
+        : ['id', 'name', 'heading', 'description', 'image', 'overview', 'achievements', 'legacy', 'treatments', 'facilities', 'expertise', 'whyChoose', 'faqs', 'isActive', 'createdAt', 'updatedAt'],
       where: { isActive: true },
-      include: [
-        {
-          model: Location,
-          as: 'locations',
-          attributes: ['id', 'name', 'address', 'phone', 'email'],
-          through: { attributes: [] },
-          required: false
-        }
-      ],
+      include: isSummary
+        ? []
+        : [
+            {
+              model: Location,
+              as: 'locations',
+              attributes: ['id', 'name', 'address', 'phone', 'email'],
+              through: { attributes: [] },
+              required: false
+            }
+          ],
       order: [['createdAt', 'DESC']]
     });
 
