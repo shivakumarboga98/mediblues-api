@@ -28,6 +28,32 @@ const createAppointment = async (event) => {
       return errorResponse('Missing required fields: fullName, mobileNumber', 400);
     }
 
+    // Validate preferred date and time - if provided, ensure it's not in the past
+    // For same-day bookings, require at least 1 hour in advance
+    if (body.preferredDate) {
+      const selectedDate = new Date(body.preferredDate + 'T00:00:00');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        return errorResponse('Appointment date must be in the future', 400);
+      }
+
+      // If date is today, validate time is at least 1 hour in the future
+      if (selectedDate.getTime() === today.getTime() && body.preferredTime) {
+        const [hours, minutes] = body.preferredTime.split(':').map(Number);
+        const selectedDateTime = new Date();
+        selectedDateTime.setHours(hours, minutes, 0, 0);
+        
+        const now = new Date();
+        const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000); // Current time + 1 hour
+
+        if (selectedDateTime < oneHourLater) {
+          return errorResponse('Same-day appointments require at least 1 hour advance booking', 400);
+        }
+      }
+    }
+
     // For normal appointments (type 1)
     if (type === 1) {
       const { location, reasonForVisit, message } = body;
@@ -245,6 +271,32 @@ const updateAppointment = async (event) => {
     const appointment = await Appointment.findByPk(id);
     if (!appointment) {
       return errorResponse('Appointment not found', 404);
+    }
+
+    // Validate preferred date and time - if provided, ensure it's not in the past
+    // For same-day bookings, require at least 1 hour in advance
+    if (body.preferredDate) {
+      const selectedDate = new Date(body.preferredDate + 'T00:00:00');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        return errorResponse('Appointment date must be in the future', 400);
+      }
+
+      // If date is today, validate time is at least 1 hour in the future
+      if (selectedDate.getTime() === today.getTime() && body.preferredTime) {
+        const [hours, minutes] = body.preferredTime.split(':').map(Number);
+        const selectedDateTime = new Date();
+        selectedDateTime.setHours(hours, minutes, 0, 0);
+        
+        const now = new Date();
+        const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000); // Current time + 1 hour
+
+        if (selectedDateTime < oneHourLater) {
+          return errorResponse('Same-day appointments require at least 1 hour advance booking', 400);
+        }
+      }
     }
 
     // Update fields if provided
