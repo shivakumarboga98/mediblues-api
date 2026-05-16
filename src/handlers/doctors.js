@@ -206,6 +206,14 @@ const searchDoctorsHandler = async (event) => {
       distinct: true
     };
 
+    // Support limit/offset for search pagination
+    const limitParam = event.queryStringParameters?.limit ? parseInt(event.queryStringParameters.limit) : null;
+    const offsetParam = event.queryStringParameters?.offset ? parseInt(event.queryStringParameters.offset) : 0;
+    if (limitParam !== null) {
+      queryOptions.limit = limitParam;
+      queryOptions.offset = offsetParam;
+    }
+
     // Add department filter if provided - this requires the department relation
     if (departmentId) {
       queryOptions.include[1] = {
@@ -298,6 +306,11 @@ const searchDoctorsHandler = async (event) => {
           : []
       };
     });
+
+    // If a limit was requested but we combined results, ensure final array respects limit
+    if (limitParam !== null && Array.isArray(formattedDoctors)) {
+      return successResponse(formattedDoctors.slice(0, limitParam));
+    }
 
     return successResponse(formattedDoctors);
   } catch (error) {
