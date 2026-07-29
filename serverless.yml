@@ -364,6 +364,7 @@ functions:
   getContactInfo:
     handler: src/handlers/contact.getContact
     description: Get active contact information
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /contact-info
@@ -372,6 +373,7 @@ functions:
   getAllContactInfo:
     handler: src/handlers/contact.getAllContacts
     description: Get all contact information entries
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /contact-info/all
@@ -380,6 +382,7 @@ functions:
   createContactInfo:
     handler: src/handlers/contact.createContact
     description: Create or update contact information
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /contact-info
@@ -388,6 +391,7 @@ functions:
   updateContactInfo:
     handler: src/handlers/contact.updateContact
     description: Update specific contact information entry
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /contact-info/{id}
@@ -399,6 +403,7 @@ functions:
   deleteContactInfo:
     handler: src/handlers/contact.deleteContact
     description: Delete contact information entry
+    vpc: ${self:custom.vpcConfig}
     events:
       - httpApi:
           path: /contact-info/{id}
