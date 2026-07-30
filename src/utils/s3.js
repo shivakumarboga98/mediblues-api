@@ -2,8 +2,11 @@ const dotenv = require('dotenv');
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const crypto = require('crypto');
 
-// Load environment variables from .env.local
-dotenv.config({ path: '.env.local' });
+// Only load local env files during development
+if (process.env.NODE_ENV === 'development') {
+  dotenv.config({ path: '.env' });
+  dotenv.config({ path: '.env.local' });
+}
 
 const s3ClientConfig = {
   region: process.env.AWS_REGION || 'eu-north-1',
