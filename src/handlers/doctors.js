@@ -2,6 +2,17 @@ const { successResponse, errorResponse } = require('../utils/response.js');
 const { Doctor, Location, Department, DoctorSpecialization } = require('../models/index.js');
 const { protectedEndpoint } = require('./adminAuth.js');
 
+const dedupeDoctorsById = (doctors) => {
+  const seen = new Map();
+  doctors.forEach((doctor) => {
+    const id = doctor?.id ?? doctor?.dataValues?.id;
+    if (id != null && !seen.has(id)) {
+      seen.set(id, doctor);
+    }
+  });
+  return Array.from(seen.values());
+};
+
 /**
  * GET /doctors - Get all doctors with full details (Public read)
  * Supports pagination via query parameters: limit and offset
@@ -35,9 +46,10 @@ const getDoctorsHandler = async (event) => {
           raw: false
         }
       ],
-      order: [['experience', 'DESC']],
+      order: [['id', 'DESC']],
       subQuery: false,
-      raw: false
+      raw: false,
+      distinct: true
     };
 
     // Add pagination if limit is provided
@@ -50,8 +62,9 @@ const getDoctorsHandler = async (event) => {
     const totalCount = await Doctor.count();
 
     const doctors = await Doctor.findAll(queryOptions);
+    const uniqueDoctors = dedupeDoctorsById(doctors);
 
-    const formattedDoctors = doctors.map(doc => {
+    const formattedDoctors = uniqueDoctors.map(doc => {
       const docData = doc.toJSON ? doc.toJSON() : doc;
       return {
         id: docData.id,
@@ -287,7 +300,8 @@ const searchDoctorsHandler = async (event) => {
       doctors = Array.from(doctorMap.values());
     }
 
-    const formattedDoctors = doctors.map(doc => {
+    const uniqueDoctors = dedupeDoctorsById(doctors);
+    const formattedDoctors = uniqueDoctors.map(doc => {
       const docData = doc.toJSON ? doc.toJSON() : doc;
       return {
         id: docData.id,
