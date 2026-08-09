@@ -48,8 +48,8 @@ provider:
             - s3:DeleteObject
             - s3:ListBucket
           Resource:
-            - "arn:aws:s3:::${env:S3_BUCKET_NAME, 'mediblues-dev-bucket'}"
-            - "arn:aws:s3:::${env:S3_BUCKET_NAME, 'mediblues-dev-bucket'}/*"
+            - "arn:aws:s3:::mediblues"
+            - "arn:aws:s3:::mediblues/*"
         - Effect: Allow
           Action:
             - logs:CreateLogGroup
@@ -517,6 +517,8 @@ custom:
       - subnet-019e419aac3fe4e9b
       - subnet-0c7f766c39c9b3d78
     
+  bucketName: ${env:S3_BUCKET_NAME, 'mediblues'}
+
   dotenv:
     # Load from .env first (for local dev), then .env.production (for prod deployment)
     # The plugin will automatically look for .env files based on stage
