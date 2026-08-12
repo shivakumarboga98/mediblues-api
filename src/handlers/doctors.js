@@ -47,7 +47,7 @@ const getDoctorsHandler = async (event) => {
         }
       ],
       order: [['id', 'DESC']],
-      subQuery: false,
+      subQuery: limit !== null,
       raw: false,
       distinct: true
     };
@@ -59,7 +59,10 @@ const getDoctorsHandler = async (event) => {
     }
 
     // Get total count for pagination info
-    const totalCount = await Doctor.count();
+    const totalCount = await Doctor.count({
+      distinct: true,
+      col: 'id'
+    });
 
     const doctors = await Doctor.findAll(queryOptions);
     const uniqueDoctors = dedupeDoctorsById(doctors);
