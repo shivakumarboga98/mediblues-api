@@ -190,14 +190,15 @@ const deleteLocationHandler = async (event) => {
       return errorResponse('Location not found', 404);
     }
 
-    const [doctorCount, departmentCount] = await Promise.all([
+    const [doctorCount, appointmentCount, departmentCount] = await Promise.all([
       location.countDoctors(),
+      location.countAppointments(),
       location.countDepartments()
     ]);
 
-    if (doctorCount > 0 || departmentCount > 0) {
+    if (doctorCount > 0 || appointmentCount > 0 || departmentCount > 0) {
       return errorResponse(
-        'Location cannot be deleted while related doctors or departments still reference it',
+        'Location cannot be deleted while related doctors, appointments, or departments still reference it',
         409,
         {
           doctors: doctorCount,
