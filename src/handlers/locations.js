@@ -190,8 +190,26 @@ const deleteLocationHandler = async (event) => {
       return errorResponse('Location not found', 404);
     }
 
+    const [doctorCount, appointmentCount, departmentCount] = await Promise.all([
+      location.countDoctors(),
+      location.countAppointments(),
+      location.countDepartments()
+    ]);
+
+    if (doctorCount > 0 || departmentCount > 0) {
+      return errorResponse(
+        'Location cannot be deleted while related doctors or departments still reference it',
+        409,
+        {
+          doctors: doctorCount,
+          appointments: appointmentCount,
+          departments: departmentCount
+        }
+      );
+    }
+
     await location.destroy();
-    return successResponse({ message: 'Location and all related doctors/relationships deleted successfully' });
+    return successResponse({ message: 'Location deleted successfully' });
   } catch (error) {
     console.error('Error deleting location:', error);
     return errorResponse('Failed to delete location', 500);
