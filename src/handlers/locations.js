@@ -190,9 +190,8 @@ const deleteLocationHandler = async (event) => {
       return errorResponse('Location not found', 404);
     }
 
-    const [doctorCount, appointmentCount, departmentCount] = await Promise.all([
+    const [doctorCount, departmentCount] = await Promise.all([
       location.countDoctors(),
-      location.countAppointments(),
       location.countDepartments()
     ]);
 
