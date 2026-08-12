@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "serverless offline --stage local",
-    "deploy": "node ./node_modules/serverless/bin/serverless.js deploy --stage prod",
-    "deploy:dev": "node ./node_modules/serverless/bin/serverless.js deploy --stage dev",
-    "remove": "serverless remove",
+    "deploy": "node ./node_modules/serverless/bin/serverless.js deploy --stage prod --aws-profile prod",
+    "deploy:dev": "node ./node_modules/serverless/bin/serverless.js deploy --stage dev --aws-profile prod",
+    "remove": "serverless remove --aws-profile prod",
     "logs": "serverless logs -f",
     "test": "node --test",
     "init-db": "node scripts/init-db.js",
