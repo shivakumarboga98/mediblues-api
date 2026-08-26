@@ -24,7 +24,7 @@ const getDoctorsHandler = async (event) => {
     const offset = event.queryStringParameters?.offset ? parseInt(event.queryStringParameters.offset) : 0;
 
     const queryOptions = {
-      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'availability', 'location_id', 'createdAt', 'updatedAt'],
+      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'description', 'availability', 'location_id', 'createdAt', 'updatedAt'],
       include: [
         {
           model: Location,
@@ -72,6 +72,7 @@ const getDoctorsHandler = async (event) => {
       return {
         id: docData.id,
         name: docData.name,
+        description: docData.description || null,
         qualifications: Array.isArray(docData.qualifications) ? docData.qualifications : (docData.qualifications ? JSON.parse(docData.qualifications) : []),
         experience: docData.experience,
         image: docData.image,
@@ -115,7 +116,7 @@ const getDoctorHandler = async (event) => {
     const { id } = event.pathParameters;
     
     const doctor = await Doctor.findByPk(id, {
-      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'availability', 'location_id', 'createdAt', 'updatedAt'],
+      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'description', 'availability', 'location_id', 'createdAt', 'updatedAt'],
       include: [
         {
           model: Location,
@@ -149,6 +150,7 @@ const getDoctorHandler = async (event) => {
     return successResponse({
       id: docData.id,
       name: docData.name,
+      description: docData.description || null,
       qualifications: Array.isArray(docData.qualifications) ? docData.qualifications : (docData.qualifications ? JSON.parse(docData.qualifications) : []),
       experience: docData.experience,
       image: docData.image,
@@ -193,7 +195,7 @@ const searchDoctorsHandler = async (event) => {
     }
 
     const queryOptions = {
-      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'availability', 'location_id', 'createdAt', 'updatedAt'],
+      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'description', 'availability', 'location_id', 'createdAt', 'updatedAt'],
       include: [
         {
           model: Location,
@@ -261,7 +263,7 @@ const searchDoctorsHandler = async (event) => {
       // First, find doctors by name (already done via where clause)
       // Now also find doctors by specialization
       const docsBySpecialization = await Doctor.findAll({
-        attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'availability', 'location_id', 'createdAt', 'updatedAt'],
+        attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'description', 'availability', 'location_id', 'createdAt', 'updatedAt'],
         include: [
           {
             model: Location,
@@ -344,7 +346,7 @@ const createDoctorHandler = async (event) => {
     console.log(`✓ Admin ${event.admin?.email || 'unknown'} creating doctor`);
     
     const body = JSON.parse(event.body || '{}');
-    const { name, qualifications, experience, location_id, departments, specializations, image } = body;
+    const { name, qualifications, experience, location_id, departments, specializations, image, description } = body;
 
     if (!name) {
       return errorResponse('Doctor name is required', 400);
@@ -366,7 +368,8 @@ const createDoctorHandler = async (event) => {
       qualifications: qualifications || [],
       experience: experience || null,
       location_id,
-      image: image || null
+      image: image || null,
+      description: description || null
     });
 
     // Add departments
@@ -394,6 +397,7 @@ const createDoctorHandler = async (event) => {
     return successResponse({ 
       id: doctor.id,
       name: doctor.name,
+      description: doctor.description || null,
       qualifications: doctor.qualifications,
       experience: doctor.experience,
       location_id: doctor.location_id,
@@ -433,7 +437,7 @@ const updateDoctorHandler = async (event) => {
       return errorResponse('Doctor not found', 404);
     }
 
-    const { name, qualifications, experience, location_id, departments, specializations, image } = body;
+    const { name, qualifications, experience, location_id, departments, specializations, image, description } = body;
 
     // Validate location if provided
     if (location_id !== undefined) {
@@ -450,6 +454,7 @@ const updateDoctorHandler = async (event) => {
     if (experience !== undefined) updateData.experience = experience;
     if (location_id !== undefined) updateData.location_id = location_id;
     if (image !== undefined) updateData.image = image;
+    if (description !== undefined) updateData.description = description;
 
     if (Object.keys(updateData).length > 0) {
       await doctor.update(updateData);
@@ -480,7 +485,7 @@ const updateDoctorHandler = async (event) => {
 
     // Fetch updated doctor with all associations and return formatted object
     const updatedDoctor = await Doctor.findByPk(id, {
-      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'location_id', 'createdAt', 'updatedAt'],
+      attributes: ['id', 'name', 'qualifications', 'experience', 'image', 'description', 'location_id', 'createdAt', 'updatedAt'],
       include: [
         {
           model: Location,

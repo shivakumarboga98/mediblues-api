@@ -59,6 +59,7 @@ export async function initializeTables() {
         experience INT,
         location_id INT NOT NULL,
         image LONGTEXT,
+        description TEXT,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE,
@@ -66,6 +67,22 @@ export async function initializeTables() {
         INDEX idx_name (name)
       )
     `);
+
+    // Ensure description column exists for older databases
+    try {
+      await query(`ALTER TABLE doctors ADD COLUMN IF NOT EXISTS description TEXT`);
+    } catch (err) {
+      // Some MySQL versions may not support IF NOT EXISTS; ignore errors here
+      // and attempt to add column only if missing via information_schema check
+      try {
+        const rows = await query(`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'doctors' AND COLUMN_NAME = 'description'`);
+        if (!rows || rows.length === 0) {
+          await query(`ALTER TABLE doctors ADD COLUMN description TEXT`);
+        }
+      } catch (innerErr) {
+        console.warn('Could not ensure doctors.description column exists:', innerErr.message);
+      }
+    }
 
     // 5. Junction table: doctor_departments (many-to-many)
     await query(`

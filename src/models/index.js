@@ -130,6 +130,11 @@ const Doctor = sequelize.define('Doctor', {
     type: DataTypes.STRING(500),
     allowNull: true
   },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Optional bio/description for the doctor shown on detail page'
+  },
   availability: {
     type: DataTypes.ENUM('available', 'busy', 'on_leave'),
     allowNull: true,
