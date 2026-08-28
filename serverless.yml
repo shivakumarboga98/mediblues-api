@@ -73,6 +73,8 @@ provider:
         - http://localhost:5174
         - ${env:FRONTEND_URL, 'http://localhost:5173'}
         - https://master.d13rf6zq4fxte8.amplifyapp.com
+        - https://mediblues.com
+        - https://www.mediblues.com
       allowedHeaders:
         - Content-Type
         - Authorization

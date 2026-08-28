@@ -9,12 +9,13 @@
  * @returns {Object} Lambda response object
  */
 const successResponse = (data, statusCode = 200) => {
+  const defaultOrigin = process.env.FRONTEND_URL || '*';
   return {
     statusCode,
     headers: {
       'Content-Type': 'application/json',
       'X-Request-Id': generateRequestId(),
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': defaultOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Type, X-Is-Base64'
     },
@@ -45,7 +46,7 @@ const errorResponse = (message, statusCode = 500, details = null) => {
     headers: {
       'Content-Type': 'application/json',
       'X-Request-Id': generateRequestId(),
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': process.env.FRONTEND_URL || '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Type, X-Is-Base64'
     },
